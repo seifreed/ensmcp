@@ -263,9 +263,11 @@ HEADER_ONLY_TABLE_HTML = (
 # needs a scrape to actually yield a parseable measure.
 MEASURE_TABLE_HTML = table_html(MEASURE_ROW_HTML)
 
-# A local fixture site answers instantly, so it needs nowhere near the live
-# site's timeout; the tests that assert on a *timeout* pass their own.
-LOCAL_TIMEOUT_MS = 10000
+# A local fixture site answers instantly, but the first Chromium launch on a
+# cold CI runner (Windows especially) can take well over ten seconds, and this
+# timeout has to cover both. Raising it only delays how fast a *real* failure
+# is reported; the tests that assert on a timeout pass their own, tighter one.
+LOCAL_TIMEOUT_MS = 60000
 
 
 def site_files(
