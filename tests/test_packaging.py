@@ -101,6 +101,11 @@ def test_both_corpora_live_inside_the_package_so_any_build_ships_them() -> None:
     check(shipped == {"anexo_ii.json", "guia_808.json"}, f"datos empaquetados: {sorted(shipped)}")
 
 
+# El probe viaja como argv de `-c`, y en la locale C de Linux CPython aborta en
+# el arranque si no puede decodificar el propio argv ("Unable to decode the
+# command from the command line"): un solo carácter no-ASCII aquí y el test
+# muere antes de probar nada. Por eso la "í" va como escape `\\u00ed`, que el
+# probe decodifica él mismo una vez arrancado.
 _UTF8_PROBE = """
 import sys
 from ensmcp.guia.loader import load_packaged_guide
@@ -109,7 +114,7 @@ from ensmcp.snapshot.repository import SnapshotRepository
 measures = SnapshotRepository.from_package_data().measures
 guia = load_packaged_guide()
 titles = " ".join(measure.title for measure in measures)
-print(len(measures), len(guia.measure_evidence), "Política de seguridad" in titles, sep="|")
+print(len(measures), len(guia.measure_evidence), "Pol\\u00edtica de seguridad" in titles, sep="|")
 """
 
 
