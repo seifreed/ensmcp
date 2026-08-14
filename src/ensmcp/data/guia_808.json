@@ -1,0 +1,853 @@
+{
+  "articles": [
+    {
+      "evidence": [
+        "Repositorio con las guías CCN-STIC de uso frecuente y permisos de acceso al mismo.",
+        "Registro de legislación y normativa aplicable (Incluyendo las ITS)"
+      ],
+      "questions": [
+        {
+          "question": "¿La organización conoce y mantiene actualizada la relación de las Instrucciones Técnicas de Seguridad (ITS) y guías de seguridad (especialmente las CCN-STIC) que son de aplicación a sus sistemas de información?",
+          "reference": "Disposición adicional segunda del ENS"
+        },
+        {
+          "question": "¿Se dispone de acceso a dichas guías CCN-STIC por parte del personal con necesidad de conocer, ya sea en el portal del CCN, o en repositorios de la organización para las guías de uso frecuente?",
+          "reference": "Disposición adicional segunda del ENS"
+        },
+        {
+          "question": "¿La organización dispone o conoce los documentos abstract del CCN CERT y los tiene en cuenta en cuanto a las recomendaciones e implementaciones de medidas de seguridad?",
+          "reference": "Disposición adicional segunda del ENS"
+        }
+      ],
+      "reference": "Disposición adicional segunda del ENS",
+      "title": "Desarrollo del ENS. ITS y guías de seguridad"
+    },
+    {
+      "evidence": [
+        "Declaración de Aplicabilidad.",
+        "Evidencia de haberse suscrito la Declaración de Aplicabilidad por parte del Responsable de Seguridad.",
+        "Evidencia de otros documentos vinculados a la Declaración de Aplicabilidad, como pueden ser los estudios que justifiquen las medidas compensatorias, o las medidas complementarias de vigilancia, que se hayan podido aplicar."
+      ],
+      "questions": [
+        {
+          "question": "¿Se dispone de un documento formal que relacione las medidas y refuerzos de seguridad indicados en el anexo II del RD 311/2022 de 3 de mayo, con indicación de su aplicabilidad al sistema de información? NOTA: A la Declaración de Aplicabilidad se le designa habitualmente en otros marcos normativos, como puede ser la norma ISO/IEC 27001, como SOA (por sus siglas en inglés de Statement of Applicability).",
+          "reference": "Art. 28.2"
+        },
+        {
+          "question": "¿Dicha Declaración de Aplicabilidad está suscrita por el Responsable de Seguridad como prueba de su compromiso respecto a la supervisión del cumplimiento de las medidas de seguridad en ella reflejadas?",
+          "reference": "Art. 28.2"
+        },
+        {
+          "question": "En caso de identificar la organización medidas que no aplican, pero que sí que lo harían en base a la categoría y niveles de las dimensiones del sistema de información, ¿Justifica suficientemente la Declaración de Aplicabilidad la exclusión de las mismas? NOTA: Pese a no ser exigible, es una buena práctica no solo justificar en la Declaración de Aplicabilidad las medidas que se excluyan, sino todas, indicando muy brevemente cómo se cumple cada medida y, si procede, referencia a los documentos relevantes del sistema que estén vinculados a ellas.",
+          "reference": "Art. 28.3"
+        },
+        {
+          "question": "En el caso de aplicar medidas compensatorias, ¿se ha justificado formalmente en la Declaración de Aplicabilidad la necesidad de aplicar tales medidas compensatorias y la justificación de que dichas medidas protegen, igual o mejor, al riesgo sobre los activos y sobre el sistema de información en su conjunto? NOTA: Cómo justificar formalmente las medidas compensatorias se detalla en la guía “CCN-STIC 819 Medidas compensatorias”.",
+          "reference": "Art. 28.3"
+        },
+        {
+          "question": "En el caso de aplicar medidas complementarias de vigilancia ¿se indica formalmente en la Declaración de Aplicabilidad si dichas medidas complementarias son transitorias, o no, y se justifica que la medida que ha sido complementada, tal vez por estar en proceso de implantación, protege de forma análoga al sistema de información?",
+          "reference": "Apartado 4.4 de esta guía, avalado por el apartado 8 del Anexo II del RD 311/2022."
+        }
+      ],
+      "reference": "Art. 28",
+      "title": "Declaración de aplicabilidad"
+    },
+    {
+      "evidence": [
+        "Declaración de Aplicabilidad."
+      ],
+      "questions": [
+        {
+          "question": "En caso de que la organización se acoja a un perfil de cumplimiento específico, aplicable a la entidad y validado por el CCN, ¿se ha recogido y justificado su aplicación en la Declaración de Aplicabilidad?",
+          "reference": "Art. 30"
+        }
+      ],
+      "reference": "Art. 30",
+      "title": "Perfiles de cumplimiento"
+    },
+    {
+      "evidence": [
+        "Acceso electrónico al último informe INES de la organización"
+      ],
+      "questions": [
+        {
+          "question": "Si se trata de una organización titular de algún sistema de información comprendido en el ámbito de aplicación del artículo 2 del ENS ¿se aporta y se actualiza la información necesaria, al menos anualmente, para dar cumplimiento a la ITS de informe del estado de la seguridad (INES), lo que permite al CCN consolidar la información para elaborar un perfil general del estado de la seguridad que propicie adoptar medidas para la mejora continua de los sistemas?",
+          "reference": "Art. 32"
+        }
+      ],
+      "reference": "Art. 32",
+      "title": "Informe del estado de la seguridad (INES)"
+    },
+    {
+      "evidence": [
+        "Uso correcto del distintivo de ENS."
+      ],
+      "questions": [
+        {
+          "question": "¿Se da publicidad en las páginas web o en las sedes electrónicas a las Declaraciones y Certificaciones de Conformidad con el ENS, atendiendo a lo indicado en la ITS correspondiente y se incluye un enlace en el Distintivo de Conformidad al documento correspondiente? NOTA: Únicamente aplica a aquellas organizaciones que ya estuvieran certificadas al realizar la auditoría.",
+          "reference": "Art. 38.2"
+        }
+      ],
+      "reference": "Art. 38",
+      "title": "PROCEDIMIENTOS DE DETERMINACIÓN DE LA CONFORMIDAD CON EL ESQUEMA NACIONAL DE SEGURIDAD."
+    },
+    {
+      "evidence": [
+        "Documento de valoración de servicios e información.",
+        "Documento formal en el que los responsables de los servicios y de la información suscriben las valoraciones.",
+        "Documento formal en el que el Responsable de Seguridad categoriza el sistema."
+      ],
+      "questions": [
+        {
+          "question": "¿Los responsables de la información y los responsables de los servicios han valorado los activos esenciales que son de su competencia en las cinco dimensiones de la seguridad?",
+          "reference": "Art. 41"
+        },
+        {
+          "question": "¿Se dispone de un documento formal que recoja dichas valoraciones y evidencia de la conformidad respecto a las mismas de los responsables de la información y los servicios afectados? ¿Se han tenido en cuenta todos los aspectos identificados en el anexo I del ENS como punto de entrada para realizar la valoración?",
+          "reference": "Art.40 Art. 41"
+        },
+        {
+          "question": "¿El Responsable de Seguridad determina la categoría del sistema mediante un documento formal, en base a las valoraciones de servicios e información soportados por el sistema de información que han realizado sus responsables? ¿En caso de que haya diferentes responsables de seguridad se ha realizado un comité para tomar en cuenta las decisiones de todos ellos?",
+          "reference": "Art. 41"
+        }
+      ],
+      "reference": "Art.40 y 41",
+      "title": "Categorización de los sistemas de información"
+    }
+  ],
+  "measure_evidence": [
+    {
+      "evidence": [
+        "Documento formal conteniendo la política de Seguridad de la Información (PSI) acorde al contenido esperado.",
+        "En su caso, evidencia de su publicación, y de su difusión interna.",
+        "Posible procedimiento de identificación de la legislación aplicable y registro actualizado conteniendo la misma.",
+        "Acta de constitución del Comité de Seguridad y designación inicial de sus miembros y aceptación de las responsabilidades.",
+        "Diferentes actas de designación y/o cese de miembros del Comité de Seguridad a lo largo del tiempo.",
+        "Documento de aceptación de las funciones de los roles del ENS y miembros del Comité de Seguridad."
+      ],
+      "measure_code": "org.1"
+    },
+    {
+      "evidence": [
+        "Documento o documentos relevantes de normativa de seguridad, acorde con el contenido esperado.",
+        "Evidencia de su aceptación por empleados y colaboradores.",
+        "Evidencia de que la documentación de seguridad se ha elaborado siguiendo las guías CCN-STIC apropiadas."
+      ],
+      "measure_code": "org.2"
+    },
+    {
+      "evidence": [
+        "Documentos relevantes de procedimientos de seguridad con evidencia de su aprobación.",
+        "En su caso, evidencia de su publicación o difusión interna en la organización.",
+        "Evidencia de procedimiento donde se indique como se trata la información en función de su nivel de seguridad.",
+        "Evidencia de validación de los procedimientos que corresponda por la autoridad competente."
+      ],
+      "measure_code": "org.3"
+    },
+    {
+      "evidence": [
+        "Documentos o registros, con el contenido esperado, de diferentes tipos de autorizaciones.",
+        "Si se emplea una herramienta de ticketing que las consolide, evidencia de tickets de peticiones de autorización.",
+        "Lista de personal autorizado a transportar de forma recurrente determinados soportes de información."
+      ],
+      "measure_code": "org.4"
+    },
+    {
+      "evidence": [
+        "Evidencia de la fecha de finalización de la última iteración de análisis de riesgos.",
+        "Documentación de la última iteración de análisis de riesgos y, en su caso, de la herramienta empleada.",
+        "Evidencia de las salvaguardas que se hayan determinado.",
+        "Documento de metodología del análisis de riesgos.",
+        "Evidencia de la herramienta empleada.",
+        "Evidencia de la valoración de activos.",
+        "Evidencia de la identificación de las amenazas.",
+        "Evidencia del cálculo del riesgo inicial y residual.",
+        "Evidencia del umbral o apetito de riesgo.",
+        "Evidencia del Plan de Tratamiento de Riesgos (PTR).",
+        "Documento resumen para la exposición de la gestión de riesgos al Comité de Seguridad.",
+        "Evidencia de aprobación formal de la gestión de riesgos y de aceptación de los riesgos residuales."
+      ],
+      "measure_code": "op.pl.1"
+    },
+    {
+      "evidence": [
+        "Planos de CPD y salas técnicas, incluyendo sus instalaciones (climatización, extinción, alimentación eléctrica, etc.).",
+        "Documentación y diagramas de red, incluyendo comunicaciones y líneas de defensa.",
+        "Documentos de arquitectura del sistema.",
+        "Procedimiento de gestión de la documentación.",
+        "Posible relación de documentos del sistema de gestión aplicado sobre el sistema de información.",
+        "Informes de auditorías o verificaciones internas realizadas.",
+        "Registro de seguimiento de las acciones correctivas, y de mejora, detectadas en las auditorías internas.",
+        "Informes de auditorías o verificaciones internas realizadas del sistema.",
+        "Registro de seguimiento de las acciones correctivas, y de mejora, detectadas en las auditorías.",
+        "Evidencias de acciones de mejora del SGSI que no provengan de las auditorías internas o externas.",
+        "Evidencias de controles técnicos de validación de entrada, intermedios o de salida."
+      ],
+      "measure_code": "op.pl.2"
+    },
+    {
+      "evidence": [
+        "Detalle del proceso de adquisiciones.",
+        "Evidencia de adquisiciones acordes a la arquitectura y, en su caso, contemplando adicionalmente formación.",
+        "Evidencia de adquisiciones alineadas con los activos contemplados en el análisis de riesgos o con el PTR.",
+        "Caso del sector público, evidencias de pliegos de prescripciones técnicas (PPT) y de pliegos de cláusulas administrativas particulares (PCAP) correspondientes a los últimos procesos de adquisición de productos y/o servicios."
+      ],
+      "measure_code": "op.pl.3"
+    },
+    {
+      "evidence": [
+        "Estudio previo de capacidad, contemplando todos los aspectos necesarios.",
+        "Evidencia de adquisiciones dimensionadas de forma alineada con el estudio previo.",
+        "Plan de Capacidad, contemplando todos los aspectos necesarios.",
+        "Evidencia de herramientas de monitorización de la capacidad."
+      ],
+      "measure_code": "op.pl.4"
+    },
+    {
+      "evidence": [
+        "Evidencia de inclusión en el catálogo CPSTIC como producto cualificado (o aprobado).",
+        "Evidencia de otras certificaciones reconocidas de producto o servicio.",
+        "Evidencia de producto aprobado libre de emanaciones TEMPEST.",
+        "Evidencia de lista de componentes Software."
+      ],
+      "measure_code": "op.pl.5"
+    },
+    {
+      "evidence": [
+        "Evidencia de métodos de identificación.",
+        "Evidencia de que los identificadores son únicos.",
+        "Evidencia de deshabilitación de cuentas y su control hasta la supresión definitiva.",
+        "Protocolo o sistemática empleada para las bajas de usuarios",
+        "Procedimiento formal de bajas de usuarios",
+        "Listas actualizadas de usuarios para acceder a diferentes recursos"
+      ],
+      "measure_code": "op.acc.1"
+    },
+    {
+      "evidence": [
+        "Evidencia de mecanismos de protección de los recursos.",
+        "Evidencia de asignación de responsables de los recursos.",
+        "Evidencia de criterios de acceso a los recursos.",
+        "Evidencia de atributos de seguridad de los usuarios (individuales y de grupo).",
+        "Evidencia de granularidad de un usuario respecto a sus privilegios de acceso."
+      ],
+      "measure_code": "op.acc.2"
+    },
+    {
+      "evidence": [
+        "Organigrama detallado de la organización que evidencie la segregación de funciones",
+        "Evidencia de la existencia y control de cuentas con privilegios de auditoría.",
+        "Evidencia de acceso, mediante cuentas de administración, únicamente desde determinados dispositivos."
+      ],
+      "measure_code": "op.acc.3"
+    },
+    {
+      "evidence": [
+        "Evidencia de auditorías de revisión de los permisos de acceso.",
+        "Evidencia de concesiones y revocaciones de accesos por el personal autorizado.",
+        "En su caso, la política de control de acceso.",
+        "En su caso, la política de acceso remoto."
+      ],
+      "measure_code": "op.acc.4"
+    },
+    {
+      "evidence": [
+        "Evidencia del proceso de entrega y aceptación de credenciales por los usuarios.",
+        "Evidencia de deshabilitación / retirada de credenciales a los usuarios.",
+        "Políticas técnicas configuradas mostrando cómo se limita el número de intentos y se fuerza cambio de credenciales.",
+        "Evidencia de que la información suministrada en los accesos está restringida al mínimo imprescindible.",
+        "Política técnica configurada mostrando complejidad de contraseñas acorde con la política establecida.",
+        "Evidencia de empleo de contraseñas de un solo uso (OTP).",
+        "Evidencia de que los certificados empleados son cualificados.",
+        "Evidencia de que se configuran los certificados protegidos mediante un segundo factor (p.ej. PIN).",
+        "Evidencia de empleo de certificados cualificados en soporte físico, protegidos mediante un segundo factor.",
+        "Evidencia de que el sistema registra los accesos con éxito y los fallidos",
+        "Evidencia de que se informa al usuario del último acceso efectuado con su identidad.",
+        "Evidencia de que se han definido puntos en los que el sistema requiere una renovación de la autenticación, si procede.",
+        "Evidencia de suspensión de las credenciales tras un período definido de no utilización."
+      ],
+      "measure_code": "op.acc.5"
+    },
+    {
+      "evidence": [
+        "Evidencia del proceso de entrega y aceptación de credenciales por los usuarios.",
+        "Evidencia de deshabilitación / retirada de credenciales a los usuarios.",
+        "Políticas técnicas configuradas mostrando cómo se limita el número de intentos y se fuerza el cambio de credenciales.",
+        "Evidencia de que la información suministrada en los accesos está restringida al mínimo imprescindible.",
+        "Evidencia de doble factor de autenticación.",
+        "Evidencias de registros de acceso.",
+        "Evidencia de que se informa al usuario del último acceso.",
+        "Evidencias de que se aplica la ITS de interconexión de sistemas de información, cuando ésta se promulgue, o en su defecto la guía CCN-STIC 811 sobre Interconexión en el ENS.",
+        "Evidencia de que para el acceso remoto se requiere autorización específica, se cifra su tráfico, se recogen pistas de auditoría y es deshabilitado fuera de los períodos establecidos de utilización."
+      ],
+      "measure_code": "op.acc.6"
+    },
+    {
+      "evidence": [
+        "Evidencia del inventario de activos, que incluya al responsable de cada activo.",
+        "Evidencia de verificaciones periódicas del inventario.",
+        "Evidencia de herramienta de monitorización / descubrimiento de activos.",
+        "Evidencia de herramienta que muestre relaciones y dependencias entre activos."
+      ],
+      "measure_code": "op.exp.1"
+    },
+    {
+      "evidence": [
+        "Evidencia de guías de bastionado, particularizadas a los equipos relevantes del sistema.",
+        "Evidencia de listas de comprobación cumplimentadas (checklist) de los equipos bastionados.",
+        "Evidencias al azar, solicitadas por el auditor, para verificar que diferentes aspectos considerados en las guías de bastionado se hayan configurado en la realidad."
+      ],
+      "measure_code": "op.exp.2"
+    },
+    {
+      "evidence": [
+        "Registros (quizás en una herramienta de ticketing) que evidencien la gestión continua de la configuración de seguridad.",
+        "Informes de Auditoria de bastionado",
+        "Informe de verificaciones de ausencia de elementos no autorizados en el sistema.",
+        "Lista de servicios autorizados en servidores y en estaciones de trabajo.",
+        "Evidencia del número e identificación de los administradores de las configuraciones de seguridad del sistema operativo y las aplicaciones.",
+        "Evidencia de la realización de copias de seguridad de las configuraciones.",
+        "Evidencia de herramienta o procedimiento de actualización de la configuración de seguridad.",
+        "Evidencia de herramientas de monitorización de la seguridad."
+      ],
+      "measure_code": "op.exp.3"
+    },
+    {
+      "evidence": [
+        "Evidencias de contratos de mantenimiento del equipamiento físico y lógico relevante.",
+        "Protocolo o sistemática seguida para la actualización y mantenimiento de los sistemas.",
+        "Evidencias de actualizaciones.",
+        "Evidencia de pruebas de preproducción previas a la instalación de parches o versiones completas.",
+        "Procedimiento formal de actualización y mantenimiento de sistemas.",
+        "Evidencias de planes de vuelta atrás previos a la actualización de sistemas.",
+        "Evidencias de actualización del firmware de los dispositivos."
+      ],
+      "measure_code": "op.exp.4"
+    },
+    {
+      "evidence": [
+        "Evidencia de un registro de peticiones de cambio (RFC), quizá en una herramienta de ticketing.",
+        "Evidencia de aprobación adicional de los cambios de riesgo ALTO de forma previa antes de su implantación por parte del Responsable de Seguridad.",
+        "Informes de pruebas de preproducción.",
+        "Evidencia de informes de riesgos asociados a determinados cambios.",
+        "Informes de pruebas de aceptación.",
+        "Evidencia de actualización de configuración (inventario, manuales, diagramas de red…), tras un cambio implementado.",
+        "Actas de posibles reuniones del CAB o de quienes tienen asignada la potestad de autorizar los cambios.",
+        "Evidencia de plan de marcha atrás respecto a un cambio.",
+        "Evidencia de comunicación de fallos al Responsable de Seguridad.",
+        "Evidencia de documentación del impacto de los cambios en la seguridad del sistema."
+      ],
+      "measure_code": "op.exp.5"
+    },
+    {
+      "evidence": [
+        "Evidencia en los equipos de la instalación de una solución antimalware para su protección.",
+        "Evidencia de consola centralizada de la solución antimalware y su configuración.",
+        "Licencia de uso de la solución antimalware, con número máximo de equipos gestionados.",
+        "Normativas, procedimientos o instrucciones que regulen la gestión de la protección antimalware.",
+        "Contrato o acuerdo de soporte de la solución antimalware.",
+        "Informes generados por la solución antimalware.",
+        "Evidencia de verificaciones de la solución antimalware.",
+        "Evidencia de otras soluciones antimalware adicionales, por ejemplo, en el FW.",
+        "Lista blanca de aplicaciones autorizadas."
+      ],
+      "measure_code": "op.exp.6"
+    },
+    {
+      "evidence": [
+        "Proceso de tratamiento de incidentes.",
+        "Evidencia de que se distinguen y tratan adecuadamente los incidentes que afecten a datos personales.",
+        "Evidencia de instrumentos para notificar incidentes al CCN-CERT cuando corresponda.",
+        "Evidencia de que se dispone de una completa gestión de incidentes.",
+        "Evidencia de recursos (procedimientos, casos de uso, etc.) de configuración dinámica del sistema ante incidentes, que podrían apoyarse, si es posible, en determinados scripts.",
+        "Evidencia de herramientas que automaticen la configuración dinámica del sistema ante alertas o incidentes."
+      ],
+      "measure_code": "op.exp.7"
+    },
+    {
+      "evidence": [
+        "Evidencia de los registros de actividad conservados.",
+        "Evidencia de configuración de los registros de actividad (LOGS) en los servidores.",
+        "Evidencia de revisión de los registros de actividad centralizados.",
+        "Evidencia de servidores NTP o equivalentes.",
+        "Documentación de seguridad del sistema sobre gestión de registros de actividad.",
+        "Evidencia de protección del acceso a los registros de actividad",
+        "Evidencia de herramientas de análisis de LOGS.",
+        "Evidencia de sistemas automáticos de recolección de registros y correlación de eventos (tipo SIEM)."
+      ],
+      "measure_code": "op.exp.8"
+    },
+    {
+      "evidence": [
+        "Evidencia de que se registran los incidentes clasificándolos por tipología.",
+        "Evidencia de acciones adoptadas, en base al análisis de los incidentes registrados."
+      ],
+      "measure_code": "op.exp.9"
+    },
+    {
+      "evidence": [
+        "Evidencia de gestión segura de claves criptográficas.",
+        "Evidencia de algoritmos empleados para generación de claves.",
+        "Evidencia de cifradores empleados."
+      ],
+      "measure_code": "op.exp.10"
+    },
+    {
+      "evidence": [
+        "Evidencias de acuerdos de nivel de servicio (ANS/SLA) suscritos con proveedores.",
+        "Certificados de conformidad con el ENS de los sistemas de proveedores relevantes."
+      ],
+      "measure_code": "op.ext.1"
+    },
+    {
+      "evidence": [
+        "Evidencia de seguimiento de proveedores.",
+        "Actas de posibles reuniones de seguimiento con un proveedor.",
+        "Informes de gestión/informes de nivel de servicio, proporcionado por el proveedor.",
+        "Evidencia de designación del punto de contacto del proveedor (POC)",
+        "Evidencia de mecanismo establecido para notificar incidentes al proveedor (portal cliente, correo electrónico…).",
+        "Evidencia de incidentes abiertos a un proveedor y su seguimiento."
+      ],
+      "measure_code": "op.ext.2"
+    },
+    {
+      "evidence": [
+        "Estudio de impacto respecto a producirse un posible incidente en los proveedores.",
+        "Evidencia de que se contempla en el BIA la dependencia de proveedores.",
+        "Análisis de riesgos incluyendo proveedores y posible Plan de Tratamiento (PTR) de los riesgos asociados a la cadena de suministro.",
+        "Plan de Continuidad con referencia a la cadena de suministro.",
+        "Pruebas del Plan de continuidad en relación al escenario de indisponibilidad proveedores."
+      ],
+      "measure_code": "op.ext.3"
+    },
+    {
+      "evidence": [
+        "Evidencia de autorizaciones de interconexiones.",
+        "Evidencia de documentación de las interconexiones."
+      ],
+      "measure_code": "op.ext.4"
+    },
+    {
+      "evidence": [
+        "Informe o checklist de verificación de requisitos de seguridad de la solución en la nube.",
+        "Evidencia de conformidad con el ENS de la solución en la nube.",
+        "Evidencia de pruebas de penetración.",
+        "Certificado de conformidad con el ENS del sistema de información que soporta la solución en la nube.",
+        "Referencia a inclusión en el catálogo CPSTIC si es una solución de seguridad en la nube.",
+        "Evidencia del empleo de las guías CCN-STIC para la configuración de seguridad del sistema en la nube."
+      ],
+      "measure_code": "op.nub.1"
+    },
+    {
+      "evidence": [
+        "Análisis de Impacto en el Negocio (BIA), incluyendo cálculos de RTO y RPO, con su fecha de actualización.",
+        "Diagrama de dependencias de los activos que soportan los servicios.",
+        "Evidencia de aprobación del BIA."
+      ],
+      "measure_code": "op.cont.1"
+    },
+    {
+      "evidence": [
+        "Plan de Continuidad acorde con el BIA.",
+        "Otros planes de continuidad de la organización vinculados.",
+        "Evidencias de formación relacionada con el Plan de Continuidad.",
+        "Planes de Recuperación (DRP) específicos, de emergencia, etc., asociados al Plan de Continuidad general.",
+        "Evidencias de comprobaciones tras la discontinuidad del sistema."
+      ],
+      "measure_code": "op.cont.2"
+    },
+    {
+      "evidence": [
+        "Informe de las pruebas de continuidad, con relación de fases y su duración individual, además de la total de la prueba.",
+        "Comparativa de las pruebas con los RTO obtenidos en el BIA.",
+        "Posibles tickets con acciones correctivas, consecuencia de pruebas del Plan de Continuidad no satisfactorias."
+      ],
+      "measure_code": "op.cont.3"
+    },
+    {
+      "evidence": [
+        "Inventario constando los medios alternativos involucrados en la recuperación.",
+        "Contratos y cuerdos de nivel de servicio de los medios alternativos contratados a terceros.",
+        "Evidencia de personal alternativo.",
+        "Evidencia de instalaciones alternativas.",
+        "Evidencia de medios de comunicaciones alternativos.",
+        "Evidencia de transferencia automática a los medios alternativos."
+      ],
+      "measure_code": "op.cont.4"
+    },
+    {
+      "evidence": [
+        "Evidencia de la herramienta de IPS/IDS.",
+        "Para el sector público, posible evidencia de sonda tipo SAT-INET del CCN-CERT.",
+        "Evidencia de las reglas definidas en el IPS/IDS.",
+        "Evidencia del procedimiento de respuesta a las alertas generadas por el IDS.",
+        "Evidencia de acciones automáticas generadas por el IDS."
+      ],
+      "measure_code": "op.mon.1"
+    },
+    {
+      "evidence": [
+        "Evidencia del nivel de implementación de las medidas, por ejemplo, adicionando a la Declaración de Aplicabilidad una columna específica con el ‘grado de implementación’ o, en su defecto, el ‘nivel de madurez’.",
+        "Evidencia de la recopilación de información para el informe INES.",
+        "Evidencia de métricas e indicadores asociados a la gestión de incidentes.",
+        "Evidencia de métricas e indicadores asociados a los recursos destinados a la seguridad."
+      ],
+      "measure_code": "op.mon.2"
+    },
+    {
+      "evidence": [
+        "Evidencia del proceso empleado para recolección de eventos de seguridad.",
+        "Evidencia del proceso que permite la correlación de eventos de seguridad.",
+        "Evidencia de obtención de prealertas de seguridad.",
+        "Evidencia de sistemas de detección y análisis de vulnerabilidades.",
+        "Evidencia de sistema de generación de alertas según el tráfico de red.",
+        "Evidencia de contrato de prestación de servicios de vigilancia y monitorización remota, tipo SOC, de estar externalizado",
+        "Evidencia de limitación y monitorización de posibilidades de minería de datos.",
+        "Evidencia de acciones correctivas derivadas de los informes de análisis de vulnerabilidades.",
+        "Evidencia de pruebas de penetración y acciones correctivas derivadas.",
+        "Evidencia de informes de verificación de la configuración y acciones correctivas derivadas."
+      ],
+      "measure_code": "op.mon.3"
+    },
+    {
+      "evidence": [
+        "Evidencia existencia de CPD y salas técnicas.",
+        "Evidencia existencia de mecanismos de seguridad para controlar el acceso.",
+        "Evidencia existencia de elementos de vigilancia y planos de ubicación debidamente protegidos.",
+        "Evidencia existencia de mecanismos de cierre en los racks."
+      ],
+      "measure_code": "mp.if.1"
+    },
+    {
+      "evidence": [
+        "Protocolo de solicitud y concesión de autorizaciones de acceso a CPD, esporádicas y permanentes.",
+        "Evidencia del sistema de gestión y control de accesos.",
+        "Evidencia de consultas a la base de datos de entradas y salidas del CPD.",
+        "Libro de visitas del CPD.",
+        "Evidencia de comunicado de confirmación de acceso a las visitas, incluyendo normas de uso del CPD."
+      ],
+      "measure_code": "mp.if.2"
+    },
+    {
+      "evidence": [
+        "Evidencia de gráficos o listados de evolución de temperatura (T) y humedad relativa (HR) en el CPD o sala técnica.",
+        "Evidencia de cables de alimentación y de señal, organizados y etiquetados.",
+        "Evidencia de posible herramienta software de representación del conexionado entre el equipamiento.",
+        "Evidencia de contratos de mantenimiento y boletines de la última revisión del equipamiento auxiliar."
+      ],
+      "measure_code": "mp.if.3"
+    },
+    {
+      "evidence": [
+        "Evidencia SAI y generadores, % de carga y duración baterías.",
+        "Posible acuerdo de aprovisionamiento preferente de gasóleo para generadores eléctricos.",
+        "Evidencia de contratos de mantenimiento y boletines de la última revisión.",
+        "Informes de baja/media/alta tensión."
+      ],
+      "measure_code": "mp.if.4"
+    },
+    {
+      "evidence": [
+        "Evidencia de los sistemas de detección y alerta.",
+        "Evidencia de los sistemas de extinción.",
+        "Evidencia de contratos de mantenimiento y partes de mantenimiento conforme a la legislación vigente."
+      ],
+      "measure_code": "mp.if.5"
+    },
+    {
+      "evidence": [
+        "Evidencia de los sistemas detectores de líquidos.",
+        "Evidencia de la existencia de bombas de achique, si procede.",
+        "Evidencia de posibles contratos de mantenimiento y boletines de la última revisión."
+      ],
+      "measure_code": "mp.if.6"
+    },
+    {
+      "evidence": [
+        "Evidencia del registro de entrada/salida"
+      ],
+      "measure_code": "mp.if.7"
+    },
+    {
+      "evidence": [
+        "Análisis de riesgos, incluyendo puestos de trabajo.",
+        "Perfiles de puesto de trabajo y RPT.",
+        "Requisitos de los diferentes puestos de trabajo respecto a la seguridad, como complemento de la RPT.",
+        "Requisitos en pliegos para el personal contratado en modalidad de prestación de servicios.",
+        "Evidencia de obtención de la HPS"
+      ],
+      "measure_code": "mp.per.1"
+    },
+    {
+      "evidence": [
+        "Acuerdos de confidencialidad suscritos por los empleados.",
+        "Acuerdos de confidencialidad suscritos con las empresas de servicios, abarcando a los colaboradores.",
+        "Pliegos y/o contratos suscritos con los prestadores de servicios en el ámbito del ENS.",
+        "Aceptación formal de los empleados respecto a deberes y responsabilidades de seguridad inherentes a su desempeño."
+      ],
+      "measure_code": "mp.per.2"
+    },
+    {
+      "evidence": [
+        "Plan de Concienciación (o Plan de Formación y Concienciación si están agrupados).",
+        "Evidencia de las últimas campañas de concienciación y receptores de las mismas."
+      ],
+      "measure_code": "mp.per.3"
+    },
+    {
+      "evidence": [
+        "Plan de Formación (o Plan de Formación y Concienciación si están agrupados).",
+        "Evidencia del programa de las formaciones realizadas.",
+        "Evidencia de la eficacia de las acciones formativas (pruebas, encuestas, certificados).",
+        "Evidencia de los asistentes a las formaciones (listas de inscritos).",
+        "Evidencia de certificados aportados por el personal, incluso de acciones formativas no organizadas por la entidad."
+      ],
+      "measure_code": "mp.per.4"
+    },
+    {
+      "evidence": [
+        "Evidencia de puesto de trabajo despejado de soportes.",
+        "Evidencia de lugares cerrados empleados para ubicar soportes conteniendo información calificada como ‘no pública’."
+      ],
+      "measure_code": "mp.eq.1"
+    },
+    {
+      "evidence": [
+        "Evidencia de GPO o directiva de configuración de bloqueo.",
+        "Evidencia de que no puede modificarse desde el puesto de usuario.",
+        "Evidencia de configuración que fuerce la cancelación de sesiones pasado determinado tiempo de inactividad."
+      ],
+      "measure_code": "mp.eq.2"
+    },
+    {
+      "evidence": [
+        "Evidencia de procedimiento de actualización del inventario y verificaciones (referido a los portátiles).",
+        "Procedimiento y cauces para comunicar la pérdida o robo de portátiles.",
+        "Política o normativa de uso seguro y de acceso remoto seguro para portátiles.",
+        "Evidencia de cifrado de los discos de los portátiles.",
+        "Evidencia de filtros visuales ‘antispy’ en los portátiles",
+        "Evidencia de normativa que prohíba el empleo del portátil en entornos no controlados."
+      ],
+      "measure_code": "mp.eq.3"
+    },
+    {
+      "evidence": [
+        "Evidencia de configuración de dispositivos que permitan garantizar el control de flujo.",
+        "Evidencia de funcionalidad de borrado de información en los dispositivos con capacidad de almacenarla.",
+        "Evidencia de empleo de componentes certificados para otros dispositivos conectados a la red.",
+        "Evidencia de herramientas de monitorización y/o autodescubrimiento de dispositivos."
+      ],
+      "measure_code": "mp.eq.4"
+    },
+    {
+      "evidence": [
+        "Evidencia de equipos cortafuegos y su definición de reglas.",
+        "Evidencia de autorizaciones para definir nuevas reglas caso de requerirse nuevos flujos."
+      ],
+      "measure_code": "mp.com.1"
+    },
+    {
+      "evidence": [
+        "Evidencia empleo de VPN.",
+        "Evidencia de los algoritmos de cifrado que se emplean en las VPN.",
+        "Evidencia de empleo de dispositivos hardware para establecer las VPN.",
+        "Evidencia de utilización de cifradores"
+      ],
+      "measure_code": "mp.com.2"
+    },
+    {
+      "evidence": [
+        "Evidencia de enlaces SSL o IP-SEC.",
+        "Evidencia de desarrollo seguro frente a ataques activos.",
+        "Informes de las pruebas de penetración.",
+        "Evidencia del empleo de certificados cualificados.",
+        "Detalle de los algoritmos de cifrado, empleados en las VPN.",
+        "Evidencia de empleo de VPN con algoritmos de cifrado autorizados por el CCN.",
+        "Evidencia de empleo de dispositivos hardware para establecer las VPN."
+      ],
+      "measure_code": "mp.com.3"
+    },
+    {
+      "evidence": [
+        "Evidencia de segmentación de red, incluyendo diagramas o listado de segmentos, si se dispone.",
+        "Evidencia de monitorización de la interconexión de segmentos de red."
+      ],
+      "measure_code": "mp.com.4"
+    },
+    {
+      "evidence": [
+        "Evidencia de calificación de los documentos del SGSI asociado al sistema de información.",
+        "Evidencia del marcado de soportes con el mayor nivel de seguridad de la información que contienen.",
+        "Evidencia de una norma o directrices respecto a cómo valorar y calificar la información."
+      ],
+      "measure_code": "mp.si.1"
+    },
+    {
+      "evidence": [
+        "Normativa, o directrices, respecto al cifrado de soportes (dispositivos removibles).",
+        "Evidencia de cifrado de soportes (dispositivos removibles).",
+        "Evidencia de cifrado de las copias de seguridad.",
+        "Evidencia de la certificación o cualificación de los productos de cifrado."
+      ],
+      "measure_code": "mp.si.2"
+    },
+    {
+      "evidence": [
+        "Evidencia de medidas de seguridad en la custodia de soportes.",
+        "Ficha técnica del fabricante de los soportes con condiciones ambientales de almacenamiento.",
+        "Evidencia de contrato y acuerdos con un tercero que custodie los soportes de la organización."
+      ],
+      "measure_code": "mp.si.3"
+    },
+    {
+      "evidence": [
+        "Registro de entrada / salida de soportes.",
+        "Verificación del cifrado de soportes.",
+        "Evidencia de maletín de transporte.",
+        "Evidencia de contrato y acuerdos con tercero que transporta los soportes de la organización."
+      ],
+      "measure_code": "mp.si.4"
+    },
+    {
+      "evidence": [
+        "Registro de borrado y/o destrucción de soportes.",
+        "Verificación del borrado seguro de soportes.",
+        "Verificación de destrucción de soportes.",
+        "Evidencia de contrato y acuerdos con tercero que borra o destruye de forma segura los soportes de la organización.",
+        "Evidencia del empleo de productos certificados o cualificados para el borrado y/o la destrucción."
+      ],
+      "measure_code": "mp.si.5"
+    },
+    {
+      "evidence": [
+        "Evidencia de separación de los entornos de producción y desarrollo.",
+        "Evidencia de medidas de seguridad del repositorio de código fuente.",
+        "Metodología de desarrollo seguro empleada.",
+        "Evidencia de que la metodología de desarrollo seguro empleada incide en la seguridad.",
+        "Evidencia de la seguridad en los datos de prueba reales, si procede."
+      ],
+      "measure_code": "mp.sw.1"
+    },
+    {
+      "evidence": [
+        "Evidencia de pruebas y verificación de los criterios de aceptación en materia de seguridad.",
+        "Evidencia de verificaciones de integridad respecto a la seguridad de otras aplicaciones y/o elementos.",
+        "Informes de pentesting.",
+        "Si procede, guías de instalación y configuración segura del sistema, facilitadas por los proveedores.",
+        "Si procede, guías de uso seguro del sistema, facilitadas por los proveedores.",
+        "Si procede, guías de relación entre cliente y proveedor, facilitadas por los proveedores.",
+        "Evidencia del entorno de preproducción o test para pruebas",
+        "Evidencia de auditorías de código fuente"
+      ],
+      "measure_code": "mp.sw.2"
+    },
+    {
+      "evidence": [
+        "Política de protección de datos y/o de seguridad de la información.",
+        "Documento de designación formal del DPD y de su notificación a la AEPD.",
+        "Registro de las Actividades de Tratamiento (RAT).",
+        "Estudio de necesidad / conveniencia de realizar EIPD.",
+        "AA.RR. de seguridad de la información, incluyendo aspectos de protección de datos personales, u otro AA.RR. adicional específico.",
+        "Procedimiento para dar cumplimiento al ejercicio de derechos.",
+        "Evidencia de incidentes registrados marcados como que afectan a datos personales y, en su caso, evidencia de la intervención del DPD o de quién asuma dicha función caso de no ser obligatoria su designación.",
+        "Procedimiento de evaluación y tratamiento de brechas de seguridad (violaciones de datos personales).",
+        "Evidencia de elementos para garantizar el secreto estadístico, si procede."
+      ],
+      "measure_code": "mp.info.1"
+    },
+    {
+      "evidence": [
+        "Norma de calificación.",
+        "Norma de valoración de la información y categorización del sistema",
+        "Evidencia de valoración de la información por sus responsables.",
+        "Relación de medidas de seguridad en función del nivel de calificación de la información y del tratamiento.",
+        "Relación de medidas de seguridad en función del nivel de seguridad de la información y del tratamiento."
+      ],
+      "measure_code": "mp.info.2"
+    },
+    {
+      "evidence": [
+        "Relación de tipos de firma electrónica empleados.",
+        "Evidencia de almacenamiento seguro de los certificados empleados.",
+        "Evidencia de gestión de los certificados digitales, indicando si son cualificados o no, CA emisora, caducidad, etc."
+      ],
+      "measure_code": "mp.info.3"
+    },
+    {
+      "evidence": [
+        "Evidencia de gestión de los sellos de tiempo, indicando si son cualificados o no, CA emisora, caducidad, etc.",
+        "Evidencia de almacenamiento seguro de los sellos de tiempo empleados."
+      ],
+      "measure_code": "mp.info.4"
+    },
+    {
+      "evidence": [
+        "Evidencia de documentos en la sede electrónica, portal web, etc., libres de metadatos no deseados.",
+        "Normativa de revisión y limpieza de metadatos no deseados.",
+        "Evidencia de herramienta de limpieza de metadatos o manual indicando como hacerlo manualmente."
+      ],
+      "measure_code": "mp.info.5"
+    },
+    {
+      "evidence": [
+        "Normativa relativa a copias de seguridad.",
+        "Evidencia de que las copias de seguridad están configuradas y se realizan de acuerdo a la normativa específica.",
+        "Comparativa entre el RPO del BIA (si se dispone) con la normativa de copias de seguridad.",
+        "Evidencia almacenamiento de copias dentro y/o fuera de las instalaciones.",
+        "Evidencias de realización de copias y actuaciones en caso de error.",
+        "Informes del proveedor, caso de copia externalizadas.",
+        "Evidencia de pruebas de restauración.",
+        "Evidencia de almacenamiento de copias en otros lugares.",
+        "Normativa determinando requisitos de almacenamiento en otros lugares."
+      ],
+      "measure_code": "mp.info.6"
+    },
+    {
+      "evidence": [
+        "Normativa de uso seguro del correo electrónico.",
+        "Opciones empleadas para el cifrado de mensajes de correo electrónico, caso de ser necesario.",
+        "Configuración y logs del filtro ‘antispam’.",
+        "Evidencia del análisis y protección antivirus del correo electrónico y de otras amenazas.",
+        "Campañas de concienciación y de formación sobre el uso seguro del correo electrónico.",
+        "Bastionado empleado para proteger el servidor de correo, si es propio."
+      ],
+      "measure_code": "mp.s.1"
+    },
+    {
+      "evidence": [
+        "Evidencias de desarrollo seguro de aplicaciones web.",
+        "Informes de auditorías técnicas de ‘caja negra’.",
+        "Informes de auditorías técnicas de ‘caja blanca’.",
+        "Procedimiento de auditoría.",
+        "Evidencias de prevención de ataques a ‘proxies’ y ‘cachés’."
+      ],
+      "measure_code": "mp.s.2"
+    },
+    {
+      "evidence": [
+        "Normativa de uso seguro de navegación web.",
+        "Evidencias de campañas sobre navegación web segura.",
+        "Evidencia de las acciones formativas dirigidas al personal encargado de la monitorización.",
+        "Evidencias de protecciones implementadas frente a amenazas de la navegación web.",
+        "Política de cookies.",
+        "Evidencias de listas negras de URL o destinos no permitidos.",
+        "Evidencias de registros de monitorización de la navegación web."
+      ],
+      "measure_code": "mp.s.3"
+    },
+    {
+      "evidence": [
+        "Evidencias de elementos de protección tecnológica contra ataques de denegación de servicio.",
+        "Evidencia de gestión de la capacidad, especialmente de comunicaciones.",
+        "Filtros de configuración DDOS en los firewalls",
+        "Procedimiento de reacción a ataques de denegación de servicio.",
+        "Acuerdo de protección frente a ataques de denegación de servicio suscrito con el proveedor de acceso a internet.",
+        "implantación de Herramienta específica de DDOS por parte de la organización."
+      ],
+      "measure_code": "mp.s.4"
+    }
+  ],
+  "schema_version": 2,
+  "source": "CCN-STIC-808 ENS. Verificación del cumplimiento, edición de Abril 2026 (Centro Criptológico Nacional)"
+}
