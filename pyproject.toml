@@ -10,15 +10,9 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Marc Rivero Lopez | @seifreed", email = "mriverolopez@gmail.com" }]
-requires-python = ">=3.14"
-# El mínimo declarado es el que se bloquea en pylock.toml, que es el único que
-# se instala y se prueba. Decir menos era falso: `mcp>=1.9.0` lo cumplen las 21
-# versiones de la serie 1.x y en ninguna existe `mcp.server.mcpserver`, el
-# módulo que importa `mcp_server/server.py` — se comprobó una a una. Un
-# resolutor que eligiera cualquiera de ellas instalaba `ensmcp` sin una queja y
-# el servidor moría al arrancar con `ModuleNotFoundError`. CI instala desde el
-# lock, así que el rango declarado no se ejercitaba nunca en su extremo bajo.
-# `tests/test_packaging.py` mantiene los dos ficheros de acuerdo.
+requires-python = ">=3.12"
+# The lower bound is the oldest interpreter exercised by the CI matrix and the
+# universal lock. `tests/test_packaging.py` keeps the manifest and lock aligned.
 dependencies = [
     "mcp>=2.0.0",
 ]
@@ -52,11 +46,11 @@ packages = ["src/ensmcp"]
 
 [tool.black]
 line-length = 100
-target-version = ["py314"]
+target-version = ["py312"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py314"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "N", "ANN", "S", "RUF"]
