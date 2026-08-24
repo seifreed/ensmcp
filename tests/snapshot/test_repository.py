@@ -433,6 +433,13 @@ async def test_a_background_check_that_succeeds_swaps_the_data_in() -> None:
 
         check(repository.status_payload()["live_check"] == LiveCheck.UPDATED.value)
         check(len((await repository.fetch_corpus())[1]) == 2)
+        diff = repository.status_payload()["diff"]
+        if not isinstance(diff, dict):
+            raise AssertionError(f"diff no es objeto: {diff!r}")
+        check(diff["status"] == "update_available", f"diff: {diff!r}")
+        check(diff["added_measures"] == [], f"medidas añadidas: {diff!r}")
+        check(len(diff["removed_measures"]) == 71, f"medidas eliminadas: {diff!r}")
+        check(diff["changed_measures"] == ["mp.s.4", "op.acc.5"], f"diff: {diff!r}")
 
 
 async def test_closing_cancels_a_check_still_in_flight() -> None:
