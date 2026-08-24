@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 from mcp.server.mcpserver import MCPServer
-from mcp.server.mcpserver.exceptions import ToolError
+from mcp.server.mcpserver.exceptions import ResourceError, ToolError
 from mcp.types import CallToolResult
 
 from ensmcp.guia.loader import load_packaged_guide
@@ -91,6 +91,16 @@ async def _call_result(server: MCPServer, name: str, arguments: dict[str, Any]) 
     if not isinstance(result, CallToolResult):
         raise TypeError(f"Expected a CallToolResult, got {type(result).__name__}")
     return result
+
+
+def _resource_text(contents: object) -> str:
+    if not isinstance(contents, list) or not contents:
+        raise TypeError(f"se esperaba contenido de resource, llegó {contents!r}")
+    content = contents[0]
+    value = getattr(content, "content", None)
+    if not isinstance(value, str):
+        raise TypeError(f"se esperaba contenido textual, llegó {type(content).__name__}")
+    return value
 
 
 async def _call_list(
@@ -429,7 +439,7 @@ async def test_server_exposes_typed_resources_and_tool_annotations(
     )
 
     contents = await snapshot_server.read_resource("ens://measures/org.1")
-    measure = json.loads(next(iter(contents)).content)
+    measure = json.loads(_resource_text(contents))
     check(measure["code"] == "org.1")
     for uri in (
         "ens://anexo-ii",
@@ -439,11 +449,19 @@ async def test_server_exposes_typed_resources_and_tool_annotations(
         "ens://guide/808/evidence/org.1",
     ):
         contents = await snapshot_server.read_resource(uri)
-        check(next(iter(contents)).content, f"resource vacío: {uri}")
+        check(bool(_resource_text(contents)), f"resource vacío: {uri}")
+    for uri in (
+        "ens://measures/unknown",
+        "ens://categories/unknown",
+        "ens://guide/808/evidence/unknown",
+    ):
+        with pytest.raises(ResourceError):
+            await snapshot_server.read_resource(uri)
 
     tools = {tool.name: tool for tool in await snapshot_server.list_tools()}
     check(all(tool.output_schema for tool in tools.values()))
-    check(tools["search_measures"].annotations.read_only_hint is True)
+    search_annotations = require(tools["search_measures"].annotations)
+    check(search_annotations.read_only_hint is True)
 
     async def refresh() -> None:
         return None
@@ -454,9 +472,83 @@ async def test_server_exposes_typed_resources_and_tool_annotations(
         status=lambda: {"source": "snapshot"},
     )
     live_tools = {tool.name: tool for tool in await live_server.list_tools()}
-    check(live_tools["refresh_live_page"].annotations.open_world_hint is True)
+    refresh_annotations = require(live_tools["refresh_live_page"].annotations)
+    check(refresh_annotations.open_world_hint is True)
     contents = await live_server.read_resource("ens://data/status")
-    check(json.loads(next(iter(contents)).content) == {"source": "snapshot"})
+    check(json.loads(_resource_text(contents)) == {"source": "snapshot"})
+
+
+async def test_large_responses_support_paging_and_compact_fields(
+    snapshot_server: MCPServer,
+) -> None:
+    result = await _call_result(
+        snapshot_server,
+        "list_measures",
+        {"limit": 2, "compact": True, "include_norm_text": False},
+    )
+    page = (result.structured_content or {})["result"]
+    check(len(page["items"]) == 2)
+    check(page["next_cursor"] == "2")
+    check("description" not in page["items"][0])
+    check("norm_text" not in page["items"][0])
+
+    without_norm = await _call_result(
+        snapshot_server,
+        "search_measures",
+        {"query": "seguridad", "limit": 1, "include_norm_text": False},
+    )
+    check("norm_text" not in (without_norm.structured_content or {})["result"]["items"][0])
+
+    next_page = await _call_result(
+        snapshot_server, "search_measures", {"query": "seguridad", "cursor": "1", "limit": 1}
+    )
+    check(len((next_page.structured_content or {})["result"]["items"]) == 1)
+
+    implicit_limit = await _call_result(
+        snapshot_server, "search_measures", {"query": "seguridad", "cursor": "0"}
+    )
+    check(len((implicit_limit.structured_content or {})["result"]["items"]) <= 50)
+    for arguments, message in (
+        ({"limit": 0}, "limit debe estar entre"),
+        ({"limit": 1, "cursor": "bad"}, "cursor debe ser"),
+        ({"limit": 1, "cursor": "999"}, "cursor fuera"),
+    ):
+        with pytest.raises(ToolError, match=message):
+            await snapshot_server.call_tool("list_measures", arguments)
+
+    declaration = await _call_result(
+        snapshot_server,
+        "declaracion_aplicabilidad",
+        {"confidencialidad": "alto", "measure_codes": ["org.1"], "compact": True},
+    )
+    declaration_page = (declaration.structured_content or {})["measures"]
+    check([item["code"] for item in declaration_page] == ["org.1"])
+    check("reinforcements" not in declaration_page[0])
+
+    scope = await _call_result(
+        snapshot_server,
+        "alcance_auditoria",
+        {
+            "integridad": "medio",
+            "measure_codes": ["org.1"],
+            "limit": 1,
+            "include_questions": False,
+            "include_evidence": True,
+        },
+    )
+    scope_page = (scope.structured_content or {})["measures"]
+    check(len(scope_page["items"]) == 1)
+    check("audit_requirements" not in scope_page["items"][0])
+    check(scope_page["items"][0]["evidence"])
+
+    requirements = await _call_result(
+        snapshot_server,
+        "requisitos_auditoria",
+        {"essential_only": True, "limit": 1},
+    )
+    requirement_page = (requirements.structured_content or {})["result"]
+    check(len(requirement_page["items"]) == 1)
+    check(requirement_page["items"][0]["essential"] is True)
 
 
 async def test_declaracion_tool_returns_the_category_and_what_it_demands(
