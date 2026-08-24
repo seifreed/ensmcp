@@ -7,11 +7,13 @@ scraping layer is only referenced through the MeasureRepository port.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Awaitable, Callable, Collection, Iterable
 from enum import Enum
 from typing import Any
 
 from mcp.server.mcpserver import MCPServer
+from mcp.types import ToolAnnotations
 
 from ensmcp.domain.models import (
     ApplicableMeasure,
@@ -44,6 +46,9 @@ RefreshHandler = Callable[[], Awaitable[None]]
 # server forwards it untouched, so nothing here has to know that a snapshot
 # exists — the same reason ``refresh`` is a callable and not a repository method.
 StatusHandler = Callable[[], dict[str, str | int]]
+
+_READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False)
+_EXTERNAL_READ = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=True)
 
 # Bajo/Medio/Alto, in the order the ENS itself ranks them. Sorting the wire
 # payload by level *value* would instead give "alto, bajo, medio", alphabetical
@@ -392,13 +397,102 @@ def build_server(
         instructions="Consulta las medidas de seguridad del ENS Navegable (CCN-CERT).",
     )
 
-    @server.tool()
+    def _resource_json(value: object) -> str:
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
+    @server.resource(
+        "ens://anexo-ii",
+        name="anexo-ii",
+        title="ENS Anexo II",
+        description="Snapshot completo de categorías y medidas del Anexo II.",
+        mime_type="application/json",
+    )
+    async def anexo_ii_resource() -> str:
+        categories, measures = await repository.fetch_corpus()
+        return _resource_json(
+            {
+                "categories": [_category_to_dict(category) for category in categories],
+                "measures": [_measure_to_dict(measure) for measure in measures],
+            }
+        )
+
+    @server.resource(
+        "ens://measures/{code}",
+        name="measure",
+        title="ENS measure",
+        description="Una medida del Anexo II por código.",
+        mime_type="application/json",
+    )
+    async def measure_resource(code: str) -> str:
+        _, measures = await repository.fetch_corpus()
+        measure = find_measure_by_code(measures, _normalize(code))
+        if measure is None:
+            raise ValueError(f"{code!r} no es una medida del Anexo II")
+        return _resource_json(_measure_to_dict(measure))
+
+    @server.resource(
+        "ens://categories/{code}",
+        name="category",
+        title="ENS category",
+        description="Una categoría del Anexo II por código.",
+        mime_type="application/json",
+    )
+    async def category_resource(code: str) -> str:
+        categories, _ = await repository.fetch_corpus()
+        wanted = _normalize(code)
+        category = next((item for item in categories if item.code == wanted), None)
+        if category is None:
+            raise ValueError(f"{code!r} no es una categoría del Anexo II")
+        return _resource_json(_category_to_dict(category))
+
+    @server.resource(
+        "ens://data/status",
+        name="data-status",
+        title="ENS data status",
+        description="Origen y estado de frescura del corpus servido.",
+        mime_type="application/json",
+    )
+    async def data_status_resource() -> str:
+        payload = status() if status is not None else {"source": "repository"}
+        return _resource_json(payload)
+
+    if guia is not None:
+
+        @server.resource(
+            "ens://guide/808/articles",
+            name="guide-808-articles",
+            title="CCN-STIC 808 articles",
+            description="Comprobaciones sobre el articulado del RD 311/2022.",
+            mime_type="application/json",
+        )
+        async def guide_articles_resource() -> str:
+            return _resource_json([_article_to_dict(article) for article in guia.articles])
+
+        @server.resource(
+            "ens://guide/808/evidence/{code}",
+            name="guide-808-evidence",
+            title="CCN-STIC 808 evidence",
+            description="Evidencias de auditoría de una medida.",
+            mime_type="application/json",
+        )
+        async def guide_evidence_resource(code: str) -> str:
+            wanted = _normalize(code)
+            items = [
+                _evidence_to_dict(item)
+                for item in guia.measure_evidence
+                if item.measure_code == wanted
+            ]
+            if not items:
+                raise ValueError(f"{code!r} no tiene evidencias en CCN-STIC 808")
+            return _resource_json(items[0])
+
+    @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def list_categories() -> list[dict[str, str]]:
         """Lista todas las categorías del Anexo II (org, op.pl, mp.if, ...)."""
         categories, _ = await repository.fetch_corpus()
         return [_category_to_dict(category) for category in categories]
 
-    @server.tool()
+    @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def list_measures(
         category_code: str | None = None,
         dimension: str | None = None,
@@ -428,7 +522,7 @@ def build_server(
         )
         return [_measure_to_dict(measure) for measure in filtered]
 
-    @server.tool()
+    @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def get_measure(code: str) -> dict[str, Any] | None:
         """Obtiene una medida de seguridad por su código exacto, p. ej. "org.1"."""
         _, measures = await repository.fetch_corpus()
@@ -439,7 +533,7 @@ def build_server(
         measure = find_measure_by_code(measures, _normalize(code))
         return _measure_to_dict(measure) if measure is not None else None
 
-    @server.tool()
+    @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def search_measures(query: str) -> list[dict[str, Any]]:
         """Busca medidas por texto: código, título, cuestionario, redacción del RD.
 
@@ -455,7 +549,7 @@ def build_server(
         matches = search_measures_by_text(measures, query)
         return [_measure_to_dict(measure) for measure in matches]
 
-    @server.tool()
+    @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def declaracion_aplicabilidad(
         confidencialidad: str | None = None,
         integridad: str | None = None,
@@ -491,7 +585,7 @@ def build_server(
             ],
         }
 
-    @server.tool()
+    @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def alcance_auditoria(
         confidencialidad: str | None = None,
         integridad: str | None = None,
@@ -534,7 +628,7 @@ def build_server(
             ],
         }
 
-    @server.tool()
+    @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def requisitos_auditoria(
         code: str | None = None, level: str | None = None
     ) -> list[dict[str, Any]]:
@@ -574,7 +668,7 @@ def build_server(
 
     if guia is not None:
 
-        @server.tool()
+        @server.tool(annotations=_READ_ONLY, structured_output=True)
         async def requisitos_articulos() -> list[dict[str, Any]]:
             """Comprobaciones de auditoría sobre el articulado del RD 311/2022.
 
@@ -588,7 +682,7 @@ def build_server(
             """
             return [_article_to_dict(article) for article in guia.articles]
 
-        @server.tool()
+        @server.tool(annotations=_READ_ONLY, structured_output=True)
         async def evidencias_auditoria(code: str | None = None) -> list[dict[str, Any]]:
             """Qué documentación puede pedir el auditor, por medida.
 
@@ -617,7 +711,7 @@ def build_server(
 
     if refresh is not None:
 
-        @server.tool()
+        @server.tool(annotations=_EXTERNAL_READ, structured_output=True)
         async def refresh_live_page() -> dict[str, str]:
             """Comprueba ahora la página live de ENS Navegable y actualiza si cambió."""
             await refresh()
@@ -625,7 +719,7 @@ def build_server(
 
     if status is not None:
 
-        @server.tool()
+        @server.tool(annotations=_READ_ONLY, structured_output=True)
         async def snapshot_status() -> dict[str, str | int]:
             """Origen y frescura de los datos servidos.
 
