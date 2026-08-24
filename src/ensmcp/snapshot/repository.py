@@ -13,12 +13,14 @@ import asyncio
 import contextlib
 import re
 from collections.abc import Awaitable, Callable, Sequence
+from dataclasses import fields
 from datetime import UTC, datetime
 from enum import Enum
 
 from ensmcp import package_data
 from ensmcp.domain.applicability import parse_levels, parse_reinforcements
 from ensmcp.domain.models import Category, SecurityMeasure
+from ensmcp.domain.queries import code_order
 from ensmcp.domain.repository import MeasureRepository
 from ensmcp.snapshot.codec import dump, load
 
@@ -35,6 +37,34 @@ ReloadHandler = Callable[[], Awaitable[None]]
 _COMPARISON_DATE = ""
 _MEASURE_CODE = re.compile(r"^(?:org|op|mp)(?:\.[a-z]+)*\.\d+$")
 _CATEGORY_CODE = re.compile(r"^(?:org|op|mp)(?:\.[a-z]+)*$")
+
+
+def _corpus_diff(
+    snapshot: Sequence[SecurityMeasure], live: Sequence[SecurityMeasure], captured_at: str
+) -> dict[str, object]:
+    snapshot_by_code = {measure.code: measure for measure in snapshot}
+    live_by_code = {measure.code: measure for measure in live}
+    added = sorted(live_by_code.keys() - snapshot_by_code.keys(), key=code_order)
+    removed = sorted(snapshot_by_code.keys() - live_by_code.keys(), key=code_order)
+    changed_fields = {
+        code: [
+            field.name
+            for field in fields(SecurityMeasure)
+            if field.name != "code"
+            and getattr(snapshot_by_code[code], field.name)
+            != getattr(live_by_code[code], field.name)
+        ]
+        for code in sorted(snapshot_by_code.keys() & live_by_code.keys(), key=code_order)
+    }
+    changed_fields = {code: names for code, names in changed_fields.items() if names}
+    return {
+        "status": "update_available",
+        "snapshot_version": captured_at,
+        "added_measures": added,
+        "removed_measures": removed,
+        "changed_measures": list(changed_fields),
+        "changed_fields": changed_fields,
+    }
 
 
 def _validate_corpus(categories: Sequence[Category], measures: Sequence[SecurityMeasure]) -> None:
@@ -175,6 +205,7 @@ class RefreshingRepository:
         self._check = LiveCheck.PENDING
         self._detail = "aún no se ha comprobado la página en vivo"
         self._lock = asyncio.Lock()
+        self._diff: dict[str, object] | None = None
         self._task: asyncio.Task[None] | None = None
 
     def start_background_check(self) -> None:
@@ -195,7 +226,7 @@ class RefreshingRepository:
             await asyncio.gather(self._task, return_exceptions=True)
             self._task = None
 
-    def status_payload(self) -> dict[str, str | int]:
+    def status_payload(self) -> dict[str, object]:
         """What ``snapshot_status`` reports: where the data came from, and when.
 
         Built here rather than in the MCP layer because this class owns the
@@ -209,12 +240,15 @@ class RefreshingRepository:
         the live rows next to the snapshot's timestamp — in the one tool whose
         whole job is to say how fresh the answer is.
         """
-        return {
+        payload: dict[str, object] = {
             "captured_at": self._captured_at,
             "measures": len(self._measures),
             "live_check": self._check.value,
             "detail": self._detail,
         }
+        if self._diff is not None:
+            payload["diff"] = self._diff
+        return payload
 
     async def fetch_corpus(self) -> tuple[list[Category], list[SecurityMeasure]]:
         return list(self._categories), list(self._measures)
@@ -265,6 +299,7 @@ class RefreshingRepository:
                 # durante el apagado.
                 self._check = LiveCheck.UNAVAILABLE
                 self._detail = f"no se pudo comprobar la página en vivo: {exc}"
+                self._diff = None
                 raise
 
     async def _compare(self) -> None:
@@ -280,6 +315,7 @@ class RefreshingRepository:
             self._captured_at = self._snapshot_captured_at
             self._check = LiveCheck.UNCHANGED
             self._detail = "la página en vivo coincide con el snapshot"
+            self._diff = None
             return
         # Lo que se sirve a partir de ahora se acaba de capturar, así que su
         # fecha es esta.
@@ -298,6 +334,7 @@ class RefreshingRepository:
                 "no se han adoptado"
             )
         self._check = LiveCheck.UPDATED
+        self._diff = _corpus_diff(self._snapshot_measures(), measures, self._snapshot_captured_at)
 
     @staticmethod
     def _reject_a_measureless_corpus(measures: Sequence[SecurityMeasure]) -> None:
@@ -364,3 +401,7 @@ class RefreshingRepository:
         only question that matters — would regenerating the file change it?
         """
         return dump(categories, measures, _COMPARISON_DATE)
+
+    def _snapshot_measures(self) -> tuple[SecurityMeasure, ...]:
+        _, measures, _ = load(self._snapshot)
+        return tuple(measures)

@@ -45,7 +45,7 @@ RefreshHandler = Callable[[], Awaitable[None]]
 # Returns whatever the data source wants to report about its own freshness. The
 # server forwards it untouched, so nothing here has to know that a snapshot
 # exists — the same reason ``refresh`` is a callable and not a repository method.
-StatusHandler = Callable[[], dict[str, str | int]]
+StatusHandler = Callable[[], dict[str, object]]
 
 _READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False)
 _EXTERNAL_READ = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=True)
@@ -846,7 +846,7 @@ def build_server(
     if status is not None:
 
         @server.tool(annotations=_READ_ONLY, structured_output=True)
-        async def snapshot_status() -> dict[str, str | int]:
+        async def snapshot_status() -> dict[str, object]:
             """Origen y frescura de los datos servidos.
 
             `captured_at`: cuándo se capturó lo que se está sirviendo — la fecha
