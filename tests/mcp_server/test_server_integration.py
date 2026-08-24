@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import AsyncIterator
 from typing import Any
@@ -415,6 +416,47 @@ async def snapshot_server() -> MCPServer:
     reinforcement notes. No browser and no network — the snapshot is a file.
     """
     return build_server(SnapshotRepository.from_package_data(), guia=load_packaged_guide())
+
+
+async def test_server_exposes_typed_resources_and_tool_annotations(
+    snapshot_server: MCPServer,
+) -> None:
+    resources = await snapshot_server.list_resources()
+    resource_uris = {str(resource.uri) for resource in resources}
+    check(
+        {"ens://anexo-ii", "ens://data/status", "ens://guide/808/articles"} <= resource_uris,
+        f"recursos registrados: {resource_uris}",
+    )
+
+    contents = await snapshot_server.read_resource("ens://measures/org.1")
+    measure = json.loads(next(iter(contents)).content)
+    check(measure["code"] == "org.1")
+    for uri in (
+        "ens://anexo-ii",
+        "ens://categories/org",
+        "ens://data/status",
+        "ens://guide/808/articles",
+        "ens://guide/808/evidence/org.1",
+    ):
+        contents = await snapshot_server.read_resource(uri)
+        check(next(iter(contents)).content, f"resource vacío: {uri}")
+
+    tools = {tool.name: tool for tool in await snapshot_server.list_tools()}
+    check(all(tool.output_schema for tool in tools.values()))
+    check(tools["search_measures"].annotations.read_only_hint is True)
+
+    async def refresh() -> None:
+        return None
+
+    live_server = build_server(
+        SnapshotRepository.from_package_data(),
+        refresh=refresh,
+        status=lambda: {"source": "snapshot"},
+    )
+    live_tools = {tool.name: tool for tool in await live_server.list_tools()}
+    check(live_tools["refresh_live_page"].annotations.open_world_hint is True)
+    contents = await live_server.read_resource("ens://data/status")
+    check(json.loads(next(iter(contents)).content) == {"source": "snapshot"})
 
 
 async def test_declaracion_tool_returns_the_category_and_what_it_demands(
