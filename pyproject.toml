@@ -22,7 +22,7 @@ ensmcp = "ensmcp.__main__:main"
 
 [project.optional-dependencies]
 live = [
-    "patchright>=1.61.2",
+    "patchright>=1.62.1",
 ]
 dev = [
     # `tests/test_packaging.py` compara los rangos de pyproject con lo que fija
@@ -38,7 +38,7 @@ dev = [
     "mypy>=1.13",
     "bandit>=1.8",
     "pip-audit>=2.7",
-    "patchright>=1.61.2",
+    "patchright>=1.62.1",
 ]
 
 [tool.hatch.build.targets.wheel]
