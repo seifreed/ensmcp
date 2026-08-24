@@ -58,7 +58,7 @@ def _previous_counts(previous: str) -> tuple[int, int]:
     try:
         document = json.loads(previous)
         return len(document["categories"]), len(document["measures"])
-    except json.JSONDecodeError, KeyError, TypeError:
+    except (json.JSONDecodeError, KeyError, TypeError):
         return 0, 0
 
 

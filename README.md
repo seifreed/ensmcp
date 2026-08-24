@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.14-blue?style=flat-square&logo=python&logoColor=white" alt="Python Version"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12--3.14-blue?style=flat-square&logo=python&logoColor=white" alt="Python Version"></a>
   <a href="https://github.com/seifreed/ensmcp/actions"><img src="https://img.shields.io/github/actions/workflow/status/seifreed/ensmcp/ci.yml?style=flat-square&logo=github&label=CI" alt="CI Status"></a>
   <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-Server-black?style=flat-square" alt="MCP Server"></a>
 </p>
@@ -148,7 +148,7 @@ También puede configurarse con `ENSMCP_MODE=offline|check-updates|live`.
 
 ## Requisitos
 
-- Python **3.14+**
+- Python **3.12-3.14**
 
 Solo para **actualizar** el snapshot (`refresh_live_page`, la comprobación de arranque, `scripts/build_snapshot.py`) hacen falta además:
 
@@ -192,7 +192,7 @@ patchright install-deps chromium
 `pyproject.toml` es el único sitio donde se declaran las dependencias; `pylock.toml` es un artefacto generado a partir de él ([PEP 751](https://peps.python.org/pep-0751/)) que fija todas las dependencias —runtime y desarrollo juntas— a versión exacta y hash, con marcadores para Windows, Linux y macOS en x64 y ARM. Para actualizar dependencias, edita los rangos en `pyproject.toml` y regenera:
 
 ```bash
-uv pip compile pyproject.toml --all-extras --universal --python-version 3.14 \
+uv pip compile pyproject.toml --all-extras --universal --python-version 3.12 \
   --format pylock.toml -o pylock.toml
 ```
 
