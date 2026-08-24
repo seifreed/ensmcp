@@ -18,7 +18,7 @@ from html import unescape
 
 import pytest
 
-from ensmcp.domain.models import ApplicabilityLevel, CategoryGroup
+from ensmcp.domain.models import ApplicabilityLevel, CategoryGroup, SystemCategory
 from ensmcp.scraping.errors import MeasurePageStructureError
 from ensmcp.scraping.navegable_repository import NavegableRepository
 from ensmcp.scraping.parsers import parse_dimension_labels
@@ -238,7 +238,7 @@ async def test_a_scraped_measure_carries_the_questionnaire_of_the_asset() -> Non
         check(len(measure.audit_requirements) == 1, f"llegaron {len(measure.audit_requirements)}")
         check(requirement.position == 0, f"position: {requirement.position}")
         check(requirement.code == "1.1", f"code: {requirement.code!r}")
-        check(requirement.level is ApplicabilityLevel.BASICO, f"level: {requirement.level}")
+        check(requirement.level is SystemCategory.BASICA, f"level: {requirement.level}")
         check(requirement.essential is True, "la pregunta va marcada essential en el fixture")
         check(
             requirement.question == "¿Se cumple lo básico?", f"question: {requirement.question!r}"

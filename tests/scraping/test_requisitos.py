@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from ensmcp.domain.models import ApplicabilityLevel
+from ensmcp.domain.models import SystemCategory
 from ensmcp.scraping.requisitos import parse_requisitos
 from tests.support import check
 
@@ -124,7 +124,7 @@ def test_an_audit_question_carries_its_level_and_essential_flag() -> None:
     first = requirements["org.1"][0]
     check(first.position == 0)
     check(first.code == "1.1")
-    check(first.level is ApplicabilityLevel.BASICO)
+    check(first.level is SystemCategory.BASICA)
     check(first.essential is True, "1.1 de org.1 está marcada essential en el sitio")
     check(first.question.startswith("¿La PSI de la organización ha sido aprobada"))
     check(first.note == "", "una pregunta sin nota trae cadena vacía, no None")
@@ -156,7 +156,7 @@ def test_the_three_levels_are_all_recognised() -> None:
     requirements = parse_requisitos(_REQUISITOS_JS).audit_requirements
 
     levels = {r.level for per_measure in requirements.values() for r in per_measure}
-    check(levels == set(ApplicabilityLevel), f"faltan niveles: {levels}")
+    check(levels == set(SystemCategory), f"faltan niveles: {levels}")
 
 
 def test_an_unknown_level_header_is_refused() -> None:

@@ -12,12 +12,13 @@ import unicodedata
 from collections.abc import Iterable, Mapping, Sequence
 
 from ensmcp.domain.models import (
-    ApplicabilityLevel,
     ApplicableMeasure,
     AuditRequirement,
+    DimensionLevel,
     MaturityLevel,
     SecurityDimension,
     SecurityMeasure,
+    SystemCategory,
 )
 
 
@@ -86,7 +87,7 @@ def filter_measures(
     measures: Sequence[SecurityMeasure],
     category_code: str | None = None,
     dimension: SecurityDimension | None = None,
-    level: ApplicabilityLevel | None = None,
+    level: DimensionLevel | None = None,
 ) -> list[SecurityMeasure]:
     """Return the measures matching every filter that was provided."""
     result = list(measures)
@@ -102,17 +103,18 @@ def filter_measures(
 # El orden del RD, de menor a mayor. Los enums de Python no se comparan con <,
 # y el orden alfabético de los valores diría que "alto" < "basico" < "medio",
 # que es justo al revés de lo que hace falta para un máximo.
-_LEVEL_RANK = {level: rank for rank, level in enumerate(ApplicabilityLevel)}
+_LEVEL_RANK = {level: rank for rank, level in enumerate(DimensionLevel)}
+_CATEGORY_RANK = {category: rank for rank, category in enumerate(SystemCategory)}
 
-DimensionLevels = Mapping[SecurityDimension, ApplicabilityLevel]
+DimensionLevels = Mapping[SecurityDimension, DimensionLevel]
 
 
-def _highest(levels: Iterable[ApplicabilityLevel]) -> ApplicabilityLevel | None:
+def _highest(levels: Iterable[DimensionLevel]) -> DimensionLevel | None:
     """El mayor nivel de los dados, o ``None`` si no hay ninguno."""
     return max(levels, key=lambda level: _LEVEL_RANK[level], default=None)
 
 
-def system_category(levels: DimensionLevels) -> ApplicabilityLevel:
+def system_category(levels: DimensionLevels) -> SystemCategory:
     """La categoría del sistema según el Anexo I, ap. 4 del RD 311/2022.
 
     ALTA si alguna dimensión alcanza el nivel ALTO; MEDIA si el máximo es
@@ -120,17 +122,16 @@ def system_category(levels: DimensionLevels) -> ApplicabilityLevel:
     valorados. Las dimensiones que el sistema no valora no aparecen en
     ``levels`` y no cuentan.
 
-    ``ApplicabilityLevel`` nombra los niveles (bajo/medio/alto) y aquí se
-    reutiliza para la categoría (BÁSICA/MEDIA/ALTA), que el RD escribe distinto
-    pero indexa igual y en la misma escala de tres.
+    La categoría se modela como ``SystemCategory`` para conservar la
+    terminología oficial, aunque comparta la escala ordinal con los niveles.
     """
-    category = _highest(levels.values())
-    if category is None:
+    level = _highest(levels.values())
+    if level is None:
         raise ValueError("hay que valorar al menos una dimensión para categorizar el sistema")
-    return category
+    return tuple(SystemCategory)[_LEVEL_RANK[level]]
 
 
-def required_level(measure: SecurityMeasure, levels: DimensionLevels) -> ApplicabilityLevel | None:
+def required_level(measure: SecurityMeasure, levels: DimensionLevels) -> DimensionLevel | None:
     """El nivel del Anexo II al que se le exige ``measure`` a este sistema.
 
     Una fila marcada "Categoría" se selecciona por la categoría del sistema y
@@ -183,13 +184,13 @@ def applicable_measures(
 # auditor exige a cada medida, según la categoría del sistema. Los nombres son
 # los de la tabla de la guía, literales.
 _MATURITY_BY_CATEGORY = {
-    ApplicabilityLevel.BASICO: MaturityLevel("L2", "Reproducible, pero intuitivo"),
-    ApplicabilityLevel.MEDIO: MaturityLevel("L3", "Proceso definido"),
-    ApplicabilityLevel.ALTO: MaturityLevel("L4", "Gestionado y medible"),
+    SystemCategory.BASICA: MaturityLevel("L2", "Reproducible, pero intuitivo"),
+    SystemCategory.MEDIA: MaturityLevel("L3", "Proceso definido"),
+    SystemCategory.ALTA: MaturityLevel("L4", "Gestionado y medible"),
 }
 
 
-def required_maturity_level(category: ApplicabilityLevel) -> MaturityLevel:
+def required_maturity_level(category: SystemCategory) -> MaturityLevel:
     """El nivel CMM mínimo que la CCN-STIC 808 §6 exige a esa categoría.
 
     L2 para BÁSICA, L3 para MEDIA y L4 para ALTA. No es por medida: el auditor
@@ -205,7 +206,7 @@ def required_maturity_level(category: ApplicabilityLevel) -> MaturityLevel:
 
 
 def required_audit_requirements(
-    measure: SecurityMeasure, level: ApplicabilityLevel
+    measure: SecurityMeasure, level: DimensionLevel
 ) -> tuple[AuditRequirement, ...]:
     """Los requisitos de auditoría exigibles a una medida en ``level``.
 
@@ -223,7 +224,7 @@ def required_audit_requirements(
     return tuple(
         requirement
         for requirement in measure.audit_requirements
-        if _LEVEL_RANK[requirement.level] <= _LEVEL_RANK[level]
+        if _CATEGORY_RANK[SystemCategory(requirement.level.value)] <= _LEVEL_RANK[level]
     )
 
 

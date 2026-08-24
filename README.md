@@ -85,7 +85,7 @@ Cada medida trae dos textos, y hacen falta los dos: `norm_text` es la redacción
   "reinforcements": [
     { "code": "R1", "level": "alto", "alternative": false, "text": "R1-Detección y reacción. ..." }
   ],
-  "raw_levels": { "basico": "n.a.", "medio": "aplica", "alto": "+ R1" }
+  "raw_levels": { "bajo": "n.a.", "medio": "aplica", "alto": "+ R1" }
 }
 ```
 
@@ -97,7 +97,7 @@ El ENS no aplica un nivel al sistema entero: aplica **uno por dimensión**. Se v
 
 ```json
 {
-  "categoria_sistema": "alto",
+  "categoria_sistema": "alta",
   "measures": [
     { "code": "op.acc.5", "title": "Mecanismo de autenticación (usuarios externos)",
       "required_level": "alto",

@@ -14,16 +14,17 @@ from typing import Any
 from mcp.server.mcpserver import MCPServer
 
 from ensmcp.domain.models import (
-    ApplicabilityLevel,
     ApplicableMeasure,
     ArticleCheck,
     AuditRequirement,
     Category,
+    DimensionLevel,
     Guia808,
     MaturityLevel,
     MeasureEvidence,
     SecurityDimension,
     SecurityMeasure,
+    SystemCategory,
 )
 from ensmcp.domain.queries import (
     applicable_measures,
@@ -44,10 +45,10 @@ RefreshHandler = Callable[[], Awaitable[None]]
 # exists — the same reason ``refresh`` is a callable and not a repository method.
 StatusHandler = Callable[[], dict[str, str | int]]
 
-# Bajo/Medio/Alto, in the order the ENS itself ranks them — which is the order
-# ApplicabilityLevel declares. Sorting the wire payload by level *value* would
-# instead give "alto, basico, medio", alphabetical and meaningless to a reader.
-_LEVEL_SORT_ORDER = tuple(ApplicabilityLevel)
+# Bajo/Medio/Alto, in the order the ENS itself ranks them. Sorting the wire
+# payload by level *value* would instead give "alto, bajo, medio", alphabetical
+# and meaningless to a reader.
+_LEVEL_SORT_ORDER = tuple(DimensionLevel)
 _LEVEL_COLUMN_NAMES = tuple(level.value for level in _LEVEL_SORT_ORDER)
 
 # Y lo mismo para las dimensiones, que también tienen orden propio: la columna
@@ -63,7 +64,7 @@ def _ordered[E: Enum](members: frozenset[E], order: tuple[E, ...]) -> list[str]:
 
     Un ``sorted`` pelado sobre los valores es lo que había, y es justo lo que el
     comentario de ``_LEVEL_SORT_ORDER`` dice que no vale: dejaba ``levels`` como
-    ``["alto", "basico", "medio"]`` en **cada** medida de **cada** payload, o sea
+    ``["alto", "bajo", "medio"]`` en **cada** medida de **cada** payload, o sea
     la escala del ENS puesta del revés en el campo que más se lee. La regla ya
     estaba escrita ahí arriba y sólo la cumplían los refuerzos.
     """
@@ -229,7 +230,7 @@ def _normalize(value: str) -> str:
 
     Real ENS codes and enum values are lowercase ASCII, so this lets ``"MP"`` /
     ``"Confidencialidad"`` / ``"ORG.1"`` match without altering any valid value
-    — and ``level="Básico"`` resolve to ``basico`` instead of failing as an
+    — and ``level="Básico"`` resolve to ``bajo`` instead of failing as an
     unknown enum member, which is what a Spanish speaker will type. The one
     transform every free-text tool argument needs before it reaches domain code.
     """
@@ -324,7 +325,7 @@ def _parse_optional_enum[E: Enum](enum_type: type[E], raw: str | None, argument:
 
     Every guess in the ENS's own vocabulary is wrong. The Anexo II table heads
     its first level column "Bajo"; the RD names the categories "BÁSICA / MEDIA
-    / ALTA"; this very server answers ``categoria_sistema: "alto"``. Yet the
+    / ALTA"; this very server answers ``categoria_sistema: "alta"``. Yet the
     enum's own ``ValueError`` said only "'bajo' is not a valid
     ApplicabilityLevel" — naming a Python class that appears in no tool schema,
     no docstring and no payload, while withholding the three words that would
@@ -346,18 +347,18 @@ def _parse_optional_enum[E: Enum](enum_type: type[E], raw: str | None, argument:
         ) from None
 
 
-def _parse_dimension_levels(**by_name: str | None) -> dict[SecurityDimension, ApplicabilityLevel]:
+def _parse_dimension_levels(**by_name: str | None) -> dict[SecurityDimension, DimensionLevel]:
     """Turn the five optional tool arguments into the domain's level mapping.
 
     An omitted (or blank) dimension is one the system does not value, so it is
     left out of the mapping entirely rather than defaulted to a level — a
-    defaulted "basico" would silently pull in measures nobody asked for.
+    defaulted "bajo" would silently pull in measures nobody asked for.
     """
-    levels: dict[SecurityDimension, ApplicabilityLevel] = {}
+    levels: dict[SecurityDimension, DimensionLevel] = {}
     for name, raw in by_name.items():
         # ``name`` is this function's own keyword, never client input, so only
         # the level needs the boundary's message.
-        level = _parse_optional_enum(ApplicabilityLevel, raw, name)
+        level = _parse_optional_enum(DimensionLevel, raw, name)
         if level is None:
             continue
         levels[SecurityDimension(name)] = level
@@ -411,7 +412,7 @@ def build_server(
             significar que el argumento no era una categoría.
         dimension: "confidencialidad", "integridad", "disponibilidad",
             "autenticidad" o "trazabilidad".
-        level: "basico", "medio" o "alto".
+        level: "bajo", "medio" o "alto". Se acepta "basico" por compatibilidad.
         """
         _, measures = await repository.fetch_corpus()
         filtered = filter_measures(
@@ -423,7 +424,7 @@ def build_server(
                 _NO_SUCH_CATEGORY,
             ),
             dimension=_parse_optional_enum(SecurityDimension, dimension, "dimension"),
-            level=_parse_optional_enum(ApplicabilityLevel, level, "level"),
+            level=_parse_optional_enum(DimensionLevel, level, "level"),
         )
         return [_measure_to_dict(measure) for measure in filtered]
 
@@ -464,8 +465,9 @@ def build_server(
     ) -> dict[str, Any]:
         """Medidas y refuerzos exigibles a un sistema, para su DdA.
 
-        Cada dimensión toma "basico", "medio" o "alto" — el nivel al que está
-        valorada en ese sistema (Anexo I) — o se omite si el sistema no la
+        Cada dimensión toma "bajo", "medio" o "alto" — el nivel al que está
+        valorada en ese sistema (Anexo I). Se acepta "basico" por compatibilidad
+        y se omite si el sistema no la
         valora. Hay que valorar al menos una.
 
         Devuelve la categoría del sistema (el mayor de esos niveles) y, por
@@ -543,7 +545,7 @@ def build_server(
             es un error, no una lista vacía: hay medidas cuyo cuestionario está
             legítimamente vacío en un tramo, y las dos cosas no pueden
             contestarse igual.
-        level: "basico", "medio" o "alto" — los mismos valores que el resto de
+        level: "basica", "media" o "alta" — las categorías oficiales del sistema.
             tools. Filtra por **la sección** en que la guía imprime el
             requisito ("Categoría Básica", "Media" y "Alta" respectivamente),
             que NO es el temario de un sistema de esa categoría: los requisitos
@@ -562,7 +564,7 @@ def build_server(
         )
         if measure_code is not None:
             measures = [measure for measure in measures if measure.code == measure_code]
-        wanted = _parse_optional_enum(ApplicabilityLevel, level, "level")
+        wanted = _parse_optional_enum(SystemCategory, level, "level")
         return [
             _requirement_to_dict(measure.code, requirement)
             for measure in measures

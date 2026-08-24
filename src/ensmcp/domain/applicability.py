@@ -5,9 +5,9 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping, Sequence
 
-from ensmcp.domain.models import ApplicabilityLevel, Reinforcement
+from ensmcp.domain.models import DimensionLevel, Reinforcement
 
-_LEVEL_ORDER = (ApplicabilityLevel.BASICO, ApplicabilityLevel.MEDIO, ApplicabilityLevel.ALTO)
+_LEVEL_ORDER = (DimensionLevel.BAJO, DimensionLevel.MEDIO, DimensionLevel.ALTO)
 _NOT_APPLICABLE_KEYS = frozenset({"na", "noaplica"})
 _REINFORCEMENT_PATTERN = re.compile(r"\bR\d+", re.IGNORECASE)
 _CHOICE_GROUP_PATTERN = re.compile(r"\[[^\]]*\]")
@@ -32,10 +32,10 @@ def _applies(cell: str) -> bool:
     raise ValueError(f"level cell is neither 'aplica' nor 'n.a.': {cell!r}")
 
 
-def parse_levels(level_cells: Sequence[str]) -> frozenset[ApplicabilityLevel]:
+def parse_levels(level_cells: Sequence[str]) -> frozenset[DimensionLevel]:
     """Return the levels whose Bajo/Medio/Alto cells say they apply."""
     _require_level_cell_count(level_cells)
-    applies: list[ApplicabilityLevel] = []
+    applies: list[DimensionLevel] = []
     for level, text in zip(_LEVEL_ORDER, level_cells, strict=True):
         stripped = text.strip()
         if not stripped:
@@ -63,7 +63,7 @@ def parse_reinforcements(
 
 def _reinforcements_in(
     fragment: str,
-    level: ApplicabilityLevel,
+    level: DimensionLevel,
     texts: Mapping[str, str] | None,
     *,
     alternative: bool,
