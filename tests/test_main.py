@@ -204,6 +204,9 @@ def test_cli_modes_are_explicit_and_offline_by_default(monkeypatch: pytest.Monke
     check(_parse_mode([]) is ServerMode.OFFLINE)
     check(_parse_mode(["--check-updates"]) is ServerMode.CHECK_UPDATES)
     check(_parse_mode(["--live"]) is ServerMode.LIVE)
+    monkeypatch.setenv(MODE_ENV_VAR, "unknown")
+    with pytest.raises(SystemExit, match="ENSMCP_MODE debe ser uno de"):
+        _parse_mode([])
 
 
 def test_importing_the_module_does_not_start_the_server() -> None:

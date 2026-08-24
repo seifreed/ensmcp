@@ -8,7 +8,7 @@ scraping layer is only referenced through the MeasureRepository port.
 from __future__ import annotations
 
 import json
-from collections.abc import Awaitable, Callable, Collection, Iterable
+from collections.abc import Awaitable, Callable, Collection, Iterable, Sequence
 from enum import Enum
 from typing import Any
 
@@ -80,8 +80,22 @@ def _category_to_dict(category: Category) -> dict[str, str]:
     return {"code": category.code, "name": category.name, "group": category.group.value}
 
 
-def _measure_to_dict(measure: SecurityMeasure) -> dict[str, Any]:
-    return {
+def _measure_to_dict(
+    measure: SecurityMeasure, *, compact: bool = False, include_norm_text: bool = True
+) -> dict[str, Any]:
+    if compact:
+        payload: dict[str, Any] = {
+            "code": measure.code,
+            "title": measure.title,
+            "category_code": measure.category_code,
+            "dimensions": _ordered(measure.dimensions, _DIMENSION_SORT_ORDER),
+            "levels": _ordered(measure.levels, _LEVEL_SORT_ORDER),
+        }
+        if include_norm_text:
+            payload["norm_text"] = measure.norm_text
+        return payload
+
+    payload = {
         "code": measure.code,
         "title": measure.title,
         "description": measure.description,
@@ -130,9 +144,14 @@ def _measure_to_dict(measure: SecurityMeasure) -> dict[str, Any]:
         # table the tuple always has the three cells.
         "raw_levels": dict(zip(_LEVEL_COLUMN_NAMES, measure.raw_levels, strict=False)),
     }
+    if not include_norm_text:
+        payload.pop("norm_text")
+    return payload
 
 
-def _applicable_to_dict(applicable: ApplicableMeasure) -> dict[str, Any]:
+def _applicable_to_dict(
+    applicable: ApplicableMeasure, *, compact: bool = False, include_norm_text: bool = True
+) -> dict[str, Any]:
     """One Declaración de Aplicabilidad line: the measure, plus what it demands.
 
     The measure keeps the exact shape every other tool returns, so a client
@@ -140,7 +159,9 @@ def _applicable_to_dict(applicable: ApplicableMeasure) -> dict[str, Any]:
     per-reinforcement ``level``, which would only repeat ``required_level``.
     """
     return {
-        **_measure_to_dict(applicable.measure),
+        **_measure_to_dict(
+            applicable.measure, compact=compact, include_norm_text=include_norm_text
+        ),
         "required_level": applicable.required_level.value,
         "required_reinforcements": [
             {
@@ -183,7 +204,13 @@ def _requirement_to_dict(measure_code: str, requirement: AuditRequirement) -> di
     }
 
 
-def _audited_to_dict(applicable: ApplicableMeasure) -> dict[str, Any]:
+def _audited_to_dict(
+    applicable: ApplicableMeasure,
+    *,
+    compact: bool = False,
+    include_norm_text: bool = True,
+    include_questions: bool = True,
+) -> dict[str, Any]:
     """One ``alcance_auditoria`` line: the measure, and what it gets asked.
 
     The sibling of ``_applicable_to_dict`` — same measure shape, same
@@ -191,16 +218,20 @@ def _audited_to_dict(applicable: ApplicableMeasure) -> dict[str, Any]:
     the reinforcements. Both live here rather than inline in their tool so the
     domain-to-wire flattening stays in one place in this module.
     """
-    return {
-        **_measure_to_dict(applicable.measure),
+    payload = {
+        **_measure_to_dict(
+            applicable.measure, compact=compact, include_norm_text=include_norm_text
+        ),
         "required_level": applicable.required_level.value,
-        "audit_requirements": [
+    }
+    if include_questions:
+        payload["audit_requirements"] = [
             _requirement_to_dict(applicable.measure.code, requirement)
             for requirement in required_audit_requirements(
                 applicable.measure, applicable.required_level
             )
-        ],
-    }
+        ]
+    return payload
 
 
 def _article_to_dict(article: ArticleCheck) -> dict[str, Any]:
@@ -313,6 +344,39 @@ def _known_code(raw: str | None, known: Collection[str], argument: str, no_such:
     if wanted is None or wanted in known:
         return wanted
     raise ValueError(f"{argument}={raw!r} {no_such}")
+
+
+def _paginate[T](
+    items: Sequence[T], limit: int | None, cursor: str | None
+) -> list[T] | dict[str, Any]:
+    """Keep legacy list responses until a caller explicitly asks for a page."""
+    if limit is None and cursor is None:
+        return list(items)
+    if limit is None:
+        limit = 50
+    if not 1 <= limit <= 500:
+        raise ValueError("limit debe estar entre 1 y 500")
+    try:
+        start = 0 if cursor is None else int(cursor)
+    except ValueError as exc:
+        raise ValueError("cursor debe ser un índice entero") from exc
+    if start < 0 or start > len(items):
+        raise ValueError("cursor fuera del rango de resultados")
+    end = min(start + limit, len(items))
+    return {
+        "items": list(items[start:end]),
+        "next_cursor": str(end) if end < len(items) else None,
+    }
+
+
+def _filter_measure_codes(
+    measures: Sequence[SecurityMeasure], codes: list[str] | None
+) -> list[SecurityMeasure]:
+    if codes is None:
+        return list(measures)
+    known = {measure.code for measure in measures}
+    wanted = {_known_code(code, known, "measure_codes", _NO_SUCH_MEASURE) for code in codes}
+    return [measure for measure in measures if measure.code in wanted]
 
 
 _NO_SUCH_MEASURE = "no es ninguna medida del Anexo II; use list_measures para ver las que existen"
@@ -497,7 +561,11 @@ def build_server(
         category_code: str | None = None,
         dimension: str | None = None,
         level: str | None = None,
-    ) -> list[dict[str, Any]]:
+        limit: int | None = None,
+        cursor: str | None = None,
+        compact: bool = False,
+        include_norm_text: bool = True,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
         """Lista medidas de seguridad con filtros opcionales.
 
         category_code: código de categoría o grupo, p. ej. "mp.if" o "mp".
@@ -520,7 +588,14 @@ def build_server(
             dimension=_parse_optional_enum(SecurityDimension, dimension, "dimension"),
             level=_parse_optional_enum(DimensionLevel, level, "level"),
         )
-        return [_measure_to_dict(measure) for measure in filtered]
+        return _paginate(
+            [
+                _measure_to_dict(measure, compact=compact, include_norm_text=include_norm_text)
+                for measure in filtered
+            ],
+            limit,
+            cursor,
+        )
 
     @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def get_measure(code: str) -> dict[str, Any] | None:
@@ -534,7 +609,13 @@ def build_server(
         return _measure_to_dict(measure) if measure is not None else None
 
     @server.tool(annotations=_READ_ONLY, structured_output=True)
-    async def search_measures(query: str) -> list[dict[str, Any]]:
+    async def search_measures(
+        query: str,
+        limit: int | None = None,
+        cursor: str | None = None,
+        compact: bool = False,
+        include_norm_text: bool = True,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
         """Busca medidas por texto: código, título, cuestionario, redacción del RD.
 
         Mira el `code`, el `title`, la `description` (el cuestionario de la
@@ -547,7 +628,14 @@ def build_server(
         # it here, on what the caller typed, missed every query made only of
         # characters that folding removes (see that function's docstring).
         matches = search_measures_by_text(measures, query)
-        return [_measure_to_dict(measure) for measure in matches]
+        return _paginate(
+            [
+                _measure_to_dict(measure, compact=compact, include_norm_text=include_norm_text)
+                for measure in matches
+            ],
+            limit,
+            cursor,
+        )
 
     @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def declaracion_aplicabilidad(
@@ -556,6 +644,11 @@ def build_server(
         disponibilidad: str | None = None,
         autenticidad: str | None = None,
         trazabilidad: str | None = None,
+        measure_codes: list[str] | None = None,
+        limit: int | None = None,
+        cursor: str | None = None,
+        compact: bool = False,
+        include_norm_text: bool = True,
     ) -> dict[str, Any]:
         """Medidas y refuerzos exigibles a un sistema, para su DdA.
 
@@ -577,12 +670,18 @@ def build_server(
             trazabilidad=trazabilidad,
         )
         _, measures = await repository.fetch_corpus()
+        applicable = applicable_measures(_filter_measure_codes(measures, measure_codes), levels)
+        page: list[dict[str, Any]] | dict[str, Any] = _paginate(
+            [
+                _applicable_to_dict(item, compact=compact, include_norm_text=include_norm_text)
+                for item in applicable
+            ],
+            limit,
+            cursor,
+        )
         return {
             "categoria_sistema": system_category(levels).value,
-            "measures": [
-                _applicable_to_dict(applicable)
-                for applicable in applicable_measures(measures, levels)
-            ],
+            "measures": page,
         }
 
     @server.tool(annotations=_READ_ONLY, structured_output=True)
@@ -592,6 +691,13 @@ def build_server(
         disponibilidad: str | None = None,
         autenticidad: str | None = None,
         trazabilidad: str | None = None,
+        measure_codes: list[str] | None = None,
+        limit: int | None = None,
+        cursor: str | None = None,
+        compact: bool = False,
+        include_norm_text: bool = True,
+        include_questions: bool = True,
+        include_evidence: bool = False,
     ) -> dict[str, Any]:
         """El temario de auditoría de un sistema: qué le van a preguntar.
 
@@ -620,18 +726,36 @@ def build_server(
         )
         _, measures = await repository.fetch_corpus()
         category = system_category(levels)
+        audited = applicable_measures(_filter_measure_codes(measures, measure_codes), levels)
+        page_items = [
+            _audited_to_dict(
+                item,
+                compact=compact,
+                include_norm_text=include_norm_text,
+                include_questions=include_questions,
+            )
+            for item in audited
+        ]
+        if include_evidence and guia is not None:
+            evidence_by_code = {
+                item.measure_code: list(item.evidence) for item in guia.measure_evidence
+            }
+            for item in page_items:
+                item["evidence"] = evidence_by_code.get(item["code"], [])
         return {
             "categoria_sistema": category.value,
             "nivel_madurez_requerido": _maturity_to_dict(required_maturity_level(category)),
-            "measures": [
-                _audited_to_dict(applicable) for applicable in applicable_measures(measures, levels)
-            ],
+            "measures": _paginate(page_items, limit, cursor),
         }
 
     @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def requisitos_auditoria(
-        code: str | None = None, level: str | None = None
-    ) -> list[dict[str, Any]]:
+        code: str | None = None,
+        level: str | None = None,
+        limit: int | None = None,
+        cursor: str | None = None,
+        essential_only: bool = False,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
         """Preguntas del cuestionario de auditoría (CCN-STIC 808), en bruto.
 
         code: una medida concreta, p. ej. "org.1". Omitido, devuelve el
@@ -659,12 +783,14 @@ def build_server(
         if measure_code is not None:
             measures = [measure for measure in measures if measure.code == measure_code]
         wanted = _parse_optional_enum(SystemCategory, level, "level")
-        return [
+        requirements = [
             _requirement_to_dict(measure.code, requirement)
             for measure in measures
             for requirement in measure.audit_requirements
-            if wanted is None or requirement.level is wanted
+            if (wanted is None or requirement.level is wanted)
+            and (not essential_only or requirement.essential)
         ]
+        return _paginate(requirements, limit, cursor)
 
     if guia is not None:
 
