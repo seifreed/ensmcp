@@ -5,13 +5,13 @@
 <h1 align="center">ensmcp</h1>
 
 <p align="center">
-  <strong>Servidor MCP con las medidas de seguridad del ENS (Anexo II del RD 311/2022): consulta el Anexo II, genera la Declaración de Aplicabilidad y el alcance de auditoría de un sistema, y funciona sin conexión</strong>
+  <strong>Servidor MCP con las medidas de seguridad del ENS (Anexo II del RD 311/2022): consulta el Anexo II, calcula la matriz normativa de aplicabilidad y genera un checklist de auditoría, sin conexión</strong>
 </p>
 
 <p align="center">
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.14-blue?style=flat-square&logo=python&logoColor=white" alt="Python Version"></a>
   <a href="https://github.com/seifreed/ensmcp/actions"><img src="https://img.shields.io/github/actions/workflow/status/seifreed/ensmcp/ci.yml?style=flat-square&logo=github&label=CI" alt="CI Status"></a>
-  <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-2.0-black?style=flat-square" alt="MCP"></a>
+  <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-Server-black?style=flat-square" alt="MCP Server"></a>
 </p>
 
 <p align="center">
@@ -24,9 +24,9 @@
 
 ## Qué es
 
-**ensmcp** es un servidor [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) que pone las medidas de seguridad del [ENS Navegable](https://gobernanza.ccn-cert.cni.es/ens-navegable) (Anexo II del RD 311/2022) al alcance de Claude Desktop, Claude Code y cualquier otro cliente MCP.
+**ensmcp** es un servidor [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) que pone las medidas de seguridad del [ENS Navegable](https://gobernanza.ccn-cert.cni.es/ens-navegable) (Anexo II del RD 311/2022) al alcance de Claude Desktop, Claude Code y cualquier otro cliente MCP. Es un servidor independiente y no está afiliado, respaldado ni mantenido por el CCN, CCN-CERT o el CNI.
 
-Los datos viajan incluidos en el paquete como un snapshot, así que el servidor responde al instante y funciona sin conexión. Al arrancar, comprueba en segundo plano el sitio oficial y, si el contenido ha cambiado, actualiza los datos automáticamente; si no hay red o no hay navegador disponible, sigue funcionando con el snapshot sin más.
+Los datos viajan incluidos en el paquete como un snapshot, así que el servidor responde al instante y funciona sin conexión. El modo predeterminado es `offline`: no abre Chrome ni accede a la red. `--check-updates` comprueba la fuente oficial sin sustituir el snapshot y `--live` permite adoptar temporalmente los datos vivos.
 
 Además del Anexo II, incorpora el cuestionario de verificación de la **guía CCN-STIC 808** (edición para el RD 311/2022): las preguntas de auditoría por medida, las comprobaciones sobre el articulado del RD y las evidencias documentales que puede pedir el auditor.
 
@@ -36,9 +36,9 @@ Además del Anexo II, incorpora el cuestionario de verificación de la **guía C
 |----------------|-------------|
 | **Servidor MCP sobre stdio** | Integrable en Claude Desktop, Claude Code y otros clientes MCP |
 | **Funciona sin conexión** | El corpus completo viaja como snapshot en el paquete |
-| **Se mantiene al día** | Una comprobación en segundo plano detecta cambios en el sitio oficial y actualiza los datos |
-| **Nunca bloquea** | Sin red o sin navegador, se sigue respondiendo desde el snapshot |
-| **Declaración de Aplicabilidad** | La DdA completa de un sistema, valorando cada dimensión por separado, en una llamada |
+| **Snapshot determinista** | El modo predeterminado sirve siempre el corpus empaquetado |
+| **Comprobación explícita** | `--check-updates` detecta cambios sin sustituir los datos servidos |
+| **Matriz de aplicabilidad** | Calcula la base normativa para preparar la Declaración de Aplicabilidad |
 | **Auditoría CCN-STIC 808** | Temario de auditoría, requisitos esenciales, artículos del RD y evidencias documentales |
 
 ## Tools disponibles
@@ -56,7 +56,7 @@ Además del Anexo II, incorpora el cuestionario de verificación de la **guía C
 
 | Tool | Args | Descripción |
 |------|------|-------------|
-| `declaracion_aplicabilidad` | `confidencialidad?`, `integridad?`, `disponibilidad?`, `autenticidad?`, `trazabilidad?` | La DdA de un sistema en una llamada: se valora cada dimensión (`basico`/`medio`/`alto`, u omitida) y devuelve las medidas exigibles con sus refuerzos. |
+| `declaracion_aplicabilidad` | `confidencialidad?`, `integridad?`, `disponibilidad?`, `autenticidad?`, `trazabilidad?` | La matriz normativa base para preparar la DdA: se valora cada dimensión (`bajo`/`medio`/`alto`, u omitida) y devuelve las medidas exigibles con sus refuerzos. |
 | `alcance_auditoria` | mismas que la DdA | El temario de auditoría del sistema: las medidas aplicables con sus preguntas de verificación acumuladas y el nivel de madurez mínimo exigible. |
 | `requisitos_auditoria` | `code?`, `level?` | El cuestionario CCN-STIC 808 en bruto, por medida o por tramo, marcando los requisitos esenciales. |
 | `requisitos_articulos` | — | Las comprobaciones de auditoría sobre el articulado del RD (DdA formal, categorización, INES...). |
@@ -136,7 +136,15 @@ Para regenerar el snapshot:
 python scripts/build_snapshot.py
 ```
 
-Para que el servidor no abra Chrome nunca por su cuenta: `ENSMCP_LIVE_CHECK=0`.
+El servidor no abre Chrome ni usa la red por defecto. Para consultar cambios explícitamente:
+
+```bash
+ensmcp --offline
+ensmcp --check-updates
+ensmcp --live
+```
+
+También puede configurarse con `ENSMCP_MODE=offline|check-updates|live`.
 
 ## Requisitos
 
@@ -148,6 +156,22 @@ Solo para **actualizar** el snapshot (`refresh_live_page`, la comprobación de a
 - Un display (o `xvfb` en servidores sin él)
 
 ## Instalación
+
+Para usar el servidor desde PyPI:
+
+```bash
+pip install ensmcp
+ensmcp --offline
+```
+
+Para habilitar la comprobación live:
+
+```bash
+pip install "ensmcp[live]"
+ensmcp --check-updates
+```
+
+### Desarrollo
 
 ```bash
 git clone https://github.com/seifreed/ensmcp.git
@@ -183,15 +207,14 @@ Configúralo en un cliente MCP (p. ej. Claude Desktop / Claude Code) apuntando a
 ```json
 {
   "mcpServers": {
-    "ensmcp": {
-      "command": "/ruta/a/ensmcp/venv/bin/python",
-      "args": ["-m", "ensmcp"]
-    }
+    "ensmcp": { "command": "ensmcp", "args": ["--offline"] }
   }
 }
 ```
 
 No hace falta configurar nada más: las consultas se responden desde el snapshot del paquete.
+
+Para decisiones de conformidad prevalecen el BOE, las Instrucciones Técnicas de Seguridad, las guías oficiales vigentes y el criterio de la entidad auditora o de certificación correspondiente.
 
 Para inspeccionarlo manualmente:
 

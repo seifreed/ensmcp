@@ -155,9 +155,12 @@ class RefreshingRepository:
         snapshot: SnapshotRepository,
         live: MeasureRepository,
         reload_live: ReloadHandler | None = None,
+        *,
+        adopt_live: bool = True,
     ) -> None:
         self._live = live
         self._reload_live = reload_live
+        self._adopt_live = adopt_live
         # Tuples throughout, like the snapshot they come from: this corpus is
         # swapped wholesale by ``refresh`` and never edited in place, and being
         # unable to edit it in place is what makes that true by construction.
@@ -270,8 +273,6 @@ class RefreshingRepository:
             await self._reload_live()
         categories, measures = await self._live.fetch_corpus()
         self._reject_a_measureless_corpus(measures)
-        self._categories = tuple(categories)
-        self._measures = tuple(measures)
         if self._serialised(categories, measures) == self._snapshot:
             # Lo que se sirve es, byte a byte, el fichero: su fecha es la del
             # fichero. También cuando se vuelve a él tras haber adoptado una web
@@ -282,12 +283,21 @@ class RefreshingRepository:
             return
         # Lo que se sirve a partir de ahora se acaba de capturar, así que su
         # fecha es esta.
-        self._captured_at = datetime.now(UTC).isoformat(timespec="seconds")
+        if self._adopt_live:
+            self._categories = tuple(categories)
+            self._measures = tuple(measures)
+            self._captured_at = datetime.now(UTC).isoformat(timespec="seconds")
+            self._detail = (
+                f"la página en vivo difiere del snapshot: {len(measures)} medidas servidas "
+                "desde memoria; regenera el fichero con scripts/build_snapshot.py"
+            )
+        else:
+            self._captured_at = self._snapshot_captured_at
+            self._detail = (
+                f"la página en vivo difiere del snapshot: {len(measures)} medidas disponibles; "
+                "no se han adoptado"
+            )
         self._check = LiveCheck.UPDATED
-        self._detail = (
-            f"la página en vivo difiere del snapshot: {len(measures)} medidas servidas "
-            "desde memoria; regenera el fichero con scripts/build_snapshot.py"
-        )
 
     @staticmethod
     def _reject_a_measureless_corpus(measures: Sequence[SecurityMeasure]) -> None:

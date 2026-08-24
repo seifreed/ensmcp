@@ -1,35 +1,63 @@
 """CLI entry point: runs the ENS Navegable MCP server over stdio.
 
 Queries are answered from the snapshot shipped with the package, so the server
-starts and responds with no Chrome, no display and no network. The live site is
-still wired in, but only to keep that snapshot honest: one background check
-compares the two and swaps the live data in if the site has changed, and the
-``refresh_live_page`` tool runs the same comparison on demand. Chrome is
-launched by those two paths and by nothing else.
+starts and responds with no Chrome, no display and no network. Live checks are
+opt-in through ``--check-updates`` or ``--live``.
 """
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import os
+from collections.abc import Sequence
+from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from mcp.server.mcpserver import MCPServer
 
 from ensmcp.guia.loader import load_packaged_guide
 from ensmcp.mcp_server.server import build_server
-from ensmcp.scraping.live_session import LiveSession
-from ensmcp.scraping.navegable_repository import NavegableRepository
 from ensmcp.snapshot.repository import RefreshingRepository, SnapshotRepository
 
-# Set to "0" to keep the server from ever launching Chrome on its own. The
-# startup check already degrades quietly when no browser is available, so this
-# is for the case where launching one is unwanted rather than impossible: a
-# machine where the window would pop up in someone's face, or a test run that
-# must not reach the network. `refresh_live_page` still works on demand.
-LIVE_CHECK_ENV_VAR = "ENSMCP_LIVE_CHECK"
+if TYPE_CHECKING:
+    from ensmcp.scraping.live_session import LiveSession
+
+MODE_ENV_VAR = "ENSMCP_MODE"
+LIVE_CHECK_ENV_VAR = "ENSMCP_LIVE_CHECK"  # backwards-compatible override
 
 
-def build_wiring(session: LiveSession) -> tuple[MCPServer, RefreshingRepository]:
+class ServerMode(StrEnum):
+    OFFLINE = "offline"
+    CHECK_UPDATES = "check-updates"
+    LIVE = "live"
+
+
+def _parse_mode(argv: Sequence[str] | None = None) -> ServerMode:
+    parser = argparse.ArgumentParser(description="Servidor MCP del ENS")
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--offline", dest="mode", action="store_const", const=ServerMode.OFFLINE)
+    modes.add_argument(
+        "--check-updates", dest="mode", action="store_const", const=ServerMode.CHECK_UPDATES
+    )
+    modes.add_argument("--live", dest="mode", action="store_const", const=ServerMode.LIVE)
+    args = parser.parse_args(argv)
+    if isinstance(args.mode, ServerMode):
+        return args.mode
+    configured = os.environ.get(MODE_ENV_VAR)
+    if configured is None:
+        legacy = os.environ.get(LIVE_CHECK_ENV_VAR)
+        configured = "offline" if legacy == "0" else ("live" if legacy else "offline")
+    try:
+        return ServerMode(configured)
+    except ValueError as exc:
+        valid = ", ".join(mode.value for mode in ServerMode)
+        raise SystemExit(f"{MODE_ENV_VAR} debe ser uno de: {valid}") from exc
+
+
+def build_wiring(
+    session: LiveSession | None, *, adopt_live: bool = True
+) -> tuple[MCPServer, RefreshingRepository]:
     """Wire the snapshot, the live site and the tools onto one ``session``.
 
     Split out of ``serve()`` so the wiring can be exercised in-process against a
@@ -45,6 +73,18 @@ def build_wiring(session: LiveSession) -> tuple[MCPServer, RefreshingRepository]
     lifecycle (the startup check, the shutdown cancel) and a test wants to read
     its status.
     """
+    snapshot = SnapshotRepository.from_package_data()
+    if session is None:
+        repo = RefreshingRepository(snapshot, snapshot, adopt_live=False)
+        server = build_server(
+            repo,
+            status=repo.status_payload,
+            guia=load_packaged_guide(),
+        )
+        return server, repo
+
+    from ensmcp.scraping.navegable_repository import NavegableRepository
+
     live = NavegableRepository(session)
     # ``live.refresh`` is the half that was missing, and without it the tools did
     # not do what their names say. ``LiveSession`` loads the page once and caches
@@ -55,7 +95,7 @@ def build_wiring(session: LiveSession) -> tuple[MCPServer, RefreshingRepository]
     # later, in the one tool whose whole job is to check *now*. Handing the
     # reload to ``RefreshingRepository`` rather than doing it here is what keeps
     # it inside the lock that the two reads it feeds already run under.
-    repo = RefreshingRepository(SnapshotRepository.from_package_data(), live, live.refresh)
+    repo = RefreshingRepository(snapshot, live, live.refresh, adopt_live=adopt_live)
     server = build_server(
         repo,
         refresh=repo.refresh,
@@ -65,7 +105,7 @@ def build_wiring(session: LiveSession) -> tuple[MCPServer, RefreshingRepository]
     return server, repo
 
 
-async def serve() -> None:
+async def serve(mode: ServerMode = ServerMode.OFFLINE) -> None:
     """Serve over stdio, tearing the browser down on the *same* event loop.
 
     ``MCPServer.run()`` is just ``anyio.run(run_stdio_async)``: it spins up its
@@ -88,12 +128,16 @@ async def serve() -> None:
     process running, with or without a handler installed). Installing one would
     only advertise a shutdown path that does not work.
     """
-    session = LiveSession()
-    server, repo = build_wiring(session)
+    session: LiveSession | None = None
+    if mode is not ServerMode.OFFLINE:
+        from ensmcp.scraping.live_session import LiveSession
+
+        session = LiveSession()
+    server, repo = build_wiring(session, adopt_live=mode is ServerMode.LIVE)
     # Scheduled here, inside the serving loop, so the task is bound to the same
     # loop the browser will be started on — the constraint this whole function
     # exists to respect.
-    if os.environ.get(LIVE_CHECK_ENV_VAR) != "0":
+    if mode is not ServerMode.OFFLINE:
         repo.start_background_check()
     try:
         await server.run_stdio_async()
@@ -107,12 +151,13 @@ async def serve() -> None:
         try:
             await repo.close()
         finally:
-            await session.close()
+            if session is not None:
+                await session.close()
 
 
-def main() -> None:
+def main(argv: Sequence[str] | None = None) -> None:
     """Run the stdio MCP server until the client closes stdin."""
-    asyncio.run(serve())
+    asyncio.run(serve(_parse_mode(argv)))
 
 
 if __name__ == "__main__":
