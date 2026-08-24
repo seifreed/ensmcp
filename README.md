@@ -4,6 +4,8 @@
 
 <h1 align="center">ensmcp</h1>
 
+<!-- mcp-name: io.github.seifreed/ensmcp -->
+
 <p align="center">
   <strong>Servidor MCP con las medidas de seguridad del ENS (Anexo II del RD 311/2022): consulta el Anexo II, calcula la matriz normativa de aplicabilidad y genera un checklist de auditoría, sin conexión</strong>
 </p>
