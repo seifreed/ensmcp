@@ -36,12 +36,37 @@ class SecurityDimension(Enum):
     TRAZABILIDAD = "trazabilidad"
 
 
-class ApplicabilityLevel(Enum):
-    """Nivel de seguridad del sistema en el que una medida es exigible."""
+class DimensionLevel(Enum):
+    """Nivel de una dimensión de seguridad del sistema."""
 
-    BASICO = "basico"
+    BAJO = "bajo"
+    BASICO = "bajo"  # alias de entrada heredado; la salida usa "bajo"
     MEDIO = "medio"
     ALTO = "alto"
+
+    @classmethod
+    def _missing_(cls, value: object) -> DimensionLevel | None:
+        if value == "basico":
+            return cls.BAJO
+        return None
+
+
+class SystemCategory(Enum):
+    """Categoría oficial del sistema: BÁSICA, MEDIA o ALTA."""
+
+    BASICA = "basica"
+    MEDIA = "media"
+    ALTA = "alta"
+
+    @classmethod
+    def _missing_(cls, value: object) -> SystemCategory | None:
+        legacy = {"basico": cls.BASICA, "bajo": cls.BASICA, "medio": cls.MEDIA, "alto": cls.ALTA}
+        return legacy.get(value) if isinstance(value, str) else None
+
+
+# Compatibility for clients importing the pre-0.1.1 name. New code should use
+# DimensionLevel or SystemCategory according to the field it models.
+ApplicabilityLevel = DimensionLevel
 
 
 class CategoryGroup(Enum):
@@ -76,7 +101,7 @@ class Reinforcement:
     """
 
     code: str
-    level: ApplicabilityLevel
+    level: DimensionLevel
     # ponytail: un booleano basta porque ninguna de las 219 celdas de la tabla
     # real lleva más de un grupo de elección. Si alguna llegara a llevar dos,
     # esto no podría decir qué refuerzo pertenece a cuál — pero raw_levels
@@ -106,7 +131,7 @@ class AuditRequirement:
 
     position: int
     code: str
-    level: ApplicabilityLevel
+    level: SystemCategory
     essential: bool
     question: str
     note: str = ""
@@ -121,7 +146,7 @@ class SecurityMeasure:
     description: str
     category_code: str
     dimensions: frozenset[SecurityDimension]
-    levels: frozenset[ApplicabilityLevel]
+    levels: frozenset[DimensionLevel]
     # Lo que el RD 311/2022 exige de esta medida, en su propia redacción. No es
     # lo mismo que ``description``, que es el cuestionario de la CCN-STIC 808:
     # aquélla *pregunta* ("¿Se gestionan las autorizaciones...?") y ésta
@@ -157,7 +182,7 @@ class ApplicableMeasure:
     """
 
     measure: SecurityMeasure
-    required_level: ApplicabilityLevel
+    required_level: DimensionLevel
     reinforcements: frozenset[Reinforcement]
 
 

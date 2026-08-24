@@ -17,6 +17,7 @@ from ensmcp.domain.models import (
     ApplicableMeasure,
     AuditRequirement,
     SecurityDimension,
+    SystemCategory,
 )
 from ensmcp.domain.queries import (
     DimensionLevels,
@@ -58,14 +59,14 @@ def _line(
 def test_system_category_is_the_highest_dimension_level() -> None:
     # Anexo I, ap. 4: ALTA si alguna dimensión alcanza ALTO; MEDIA si el máximo
     # es MEDIO; BÁSICA si el máximo es BAJO.
-    check(system_category({_C: ApplicabilityLevel.BASICO}) is ApplicabilityLevel.BASICO)
+    check(system_category({_C: ApplicabilityLevel.BASICO}) is SystemCategory.BASICA)
     check(
         system_category({_C: ApplicabilityLevel.BASICO, _I: ApplicabilityLevel.ALTO})
-        is ApplicabilityLevel.ALTO
+        is SystemCategory.ALTA
     )
     check(
         system_category({_C: ApplicabilityLevel.MEDIO, _D: ApplicabilityLevel.BASICO})
-        is ApplicabilityLevel.MEDIO
+        is SystemCategory.MEDIA
     )
 
 
@@ -139,11 +140,11 @@ def test_a_category_row_is_demanded_at_the_system_category() -> None:
     # as all five dimensions, and max over the five *is* the system category —
     # so no special case is needed. Checked over every such row at once.
     levels = {_C: ApplicabilityLevel.ALTO, _I: ApplicabilityLevel.BASICO}
-    category = system_category(levels)
+    system_category(levels)
 
     rows = [m for m in _MEASURES if len(m.dimensions) == len(SecurityDimension)]
     check(len(rows) == 45, f"esperaba 45 filas 'Categoría', hay {len(rows)}")
-    check(all(required_level(row, levels) is category for row in rows))
+    check(all(required_level(row, levels) is ApplicabilityLevel.ALTO for row in rows))
 
 
 def test_an_unvalued_dimension_excludes_the_measures_that_only_protect_it() -> None:
@@ -154,7 +155,7 @@ def test_an_unvalued_dimension_excludes_the_measures_that_only_protect_it() -> N
     codes = _codes(levels)
     check("op.exp.8" not in codes, "op.exp.8 sólo protege trazabilidad, sin valorar aquí")
     check("org.1" in codes, "una fila 'Categoría' sí se exige")
-    check(system_category(levels) is ApplicabilityLevel.ALTO)
+    check(system_category(levels) is SystemCategory.ALTA)
 
 
 def test_every_line_reports_a_level_the_measure_actually_has() -> None:
@@ -182,9 +183,9 @@ def test_audit_requirements_accumulate_up_to_the_required_level() -> None:
 
     medio = required_audit_requirements(op_pl_1, ApplicabilityLevel.MEDIO)
     check(len(medio) == 12, f"esperaba 7+5=12 preguntas, hay {len(medio)}")
-    check({r.level for r in medio} == {ApplicabilityLevel.BASICO, ApplicabilityLevel.MEDIO})
+    check({r.level for r in medio} == {SystemCategory.BASICA, SystemCategory.MEDIA})
     # Y nada del tramo alto, que a un sistema medio no se le exige.
-    check(all(r.level is not ApplicabilityLevel.ALTO for r in medio))
+    check(all(r.level is not SystemCategory.ALTA for r in medio))
 
 
 def test_reading_only_the_required_levels_section_would_lose_most_of_the_scope() -> None:
@@ -193,7 +194,7 @@ def test_reading_only_the_required_levels_section_would_lose_most_of_the_scope()
     op_pl_1 = require(next((m for m in _MEASURES if m.code == "op.pl.1"), None))
 
     acumulado = required_audit_requirements(op_pl_1, ApplicabilityLevel.MEDIO)
-    solo_el_tramo = [r for r in op_pl_1.audit_requirements if r.level is ApplicabilityLevel.MEDIO]
+    solo_el_tramo = [r for r in op_pl_1.audit_requirements if r.level is SystemCategory.MEDIA]
     check(len(acumulado) > len(solo_el_tramo), "el acumulado tiene que ser mayor")
     check(len(solo_el_tramo) == 5)
 
@@ -218,7 +219,7 @@ def test_a_basic_system_is_only_asked_the_first_tier() -> None:
     scope = _scope(_uniform(ApplicabilityLevel.BASICO))
 
     check(len(scope) > 0)
-    check({r.level for r in scope} == {ApplicabilityLevel.BASICO})
+    check({r.level for r in scope} == {SystemCategory.BASICA})
 
 
 def test_a_higher_category_never_drops_an_audit_question() -> None:
@@ -249,13 +250,13 @@ def test_a_measure_that_does_not_apply_contributes_no_questions() -> None:
 @pytest.mark.parametrize(
     ("category", "code", "name"),
     [
-        (ApplicabilityLevel.BASICO, "L2", "Reproducible, pero intuitivo"),
-        (ApplicabilityLevel.MEDIO, "L3", "Proceso definido"),
-        (ApplicabilityLevel.ALTO, "L4", "Gestionado y medible"),
+        (SystemCategory.BASICA, "L2", "Reproducible, pero intuitivo"),
+        (SystemCategory.MEDIA, "L3", "Proceso definido"),
+        (SystemCategory.ALTA, "L4", "Gestionado y medible"),
     ],
 )
 def test_required_maturity_level_per_category(
-    category: ApplicabilityLevel, code: str, name: str
+    category: SystemCategory, code: str, name: str
 ) -> None:
     # CCN-STIC 808 §6, con los nombres literales de su tabla. El código solo no
     # le dice nada a quien lo recibe, y la guía sí lo dice.
@@ -315,7 +316,10 @@ def test_the_declaration_holds_its_invariants_for_every_possible_system() -> Non
         category = system_category(levels)
 
         check(
-            category == max(levels.values(), key=lambda level: _RANK[level]),
+            category
+            is tuple(SystemCategory)[
+                _RANK[max(levels.values(), key=lambda level: _RANK[level])] - 1
+            ],
             f"{combo}: la categoría no es el máximo de los niveles valorados",
         )
         for line in applicable_measures(_MEASURES, levels):

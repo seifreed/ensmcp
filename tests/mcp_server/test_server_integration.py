@@ -192,12 +192,12 @@ async def test_measure_payload_carries_reinforcements_and_verbatim_level_cells(
         ],
         f"reinforcements were {mp_s_4['reinforcements']}",
     )
-    check(mp_s_4["raw_levels"] == {"basico": "n.a.", "medio": "aplica", "alto": "+ R1"})
+    check(mp_s_4["raw_levels"] == {"bajo": "n.a.", "medio": "aplica", "alto": "+ R1"})
 
     # A measure with no note reports an empty list, not a missing key.
     org_1 = require(next((m for m in measures if m["code"] == "org.1"), None))
     check(org_1["reinforcements"] == [])
-    check(org_1["raw_levels"] == {"basico": "aplica", "medio": "aplica", "alto": "aplica"})
+    check(org_1["raw_levels"] == {"bajo": "aplica", "medio": "aplica", "alto": "aplica"})
 
 
 async def test_measure_payload_carries_what_the_rd_demands_of_the_measure(
@@ -239,7 +239,7 @@ async def test_measure_payload_distinguishes_a_choice_from_a_requirement(
         await _call_measure_or_none(local_server, "get_measure", {"code": "op.acc.5"})
     )
 
-    basico = [r for r in measure["reinforcements"] if r["level"] == "basico"]
+    basico = [r for r in measure["reinforcements"] if r["level"] == "bajo"]
     check(sorted(r["code"] for r in basico) == ["R1", "R2", "R3", "R4"])
     check(all(r["alternative"] for r in basico), f"basico was {basico}")
 
@@ -253,7 +253,7 @@ async def test_list_measures_tool_filters_by_level(local_server: MCPServer) -> N
     measures = await _call_list(local_server, "list_measures", {"level": "basico"})
 
     check(len(measures) > 0)
-    check(all("basico" in measure["levels"] for measure in measures))
+    check(all("bajo" in measure["levels"] for measure in measures))
 
 
 async def test_list_measures_tool_normalizes_category_code(local_server: MCPServer) -> None:
@@ -291,7 +291,7 @@ async def test_list_measures_tool_rejects_an_invalid_level_as_a_tool_error(
     with pytest.raises(ToolError, match="level='no-existe'") as raised:
         await local_server.call_tool("list_measures", {"level": "no-existe"})
 
-    check("basico, medio, alto" in str(raised.value), str(raised.value))
+    check("bajo, medio, alto" in str(raised.value), str(raised.value))
     check("ApplicabilityLevel" not in str(raised.value), str(raised.value))
 
 
@@ -358,7 +358,7 @@ async def test_list_measures_tool_accepts_a_level_typed_with_accents(
     measures = await _call_list(local_server, "list_measures", {"level": level})
 
     check(len(measures) > 0)
-    check(all("basico" in measure["levels"] for measure in measures))
+    check(all("bajo" in measure["levels"] for measure in measures))
 
 
 async def test_search_measures_tool_finds_the_same_with_and_without_accents(
@@ -433,7 +433,7 @@ async def test_declaracion_tool_returns_the_category_and_what_it_demands(
     )
     payload = result.structured_content or {}
 
-    check(payload["categoria_sistema"] == "alto", f"categoría fue {payload['categoria_sistema']}")
+    check(payload["categoria_sistema"] == "alta", f"categoría fue {payload['categoria_sistema']}")
     measures = payload["measures"]
     check(len(measures) > 0)
     # Every line keeps the same measure shape the other tools return, plus the
@@ -523,7 +523,7 @@ async def test_scope_tool_returns_the_audit_syllabus_of_a_system(
     )
     payload = result.structured_content or {}
 
-    check(payload["categoria_sistema"] == "alto")
+    check(payload["categoria_sistema"] == "alta")
     # El nivel viaja con su nombre, como cualquier otro código de este payload:
     # un refuerzo lleva su `text`, un requisito su `question`. Un "L4" pelado
     # sólo le sirve a quien ya tiene la guía abierta.
@@ -547,7 +547,7 @@ async def test_scope_tool_accumulates_the_lower_tiers(snapshot_server: MCPServer
     op_pl_1 = require(next((m for m in measures if m["code"] == "op.pl.1"), None))
     check(op_pl_1["required_level"] == "medio")
     levels = {q["level"] for q in op_pl_1["audit_requirements"]}
-    check(levels == {"basico", "medio"}, f"niveles del temario: {levels}")
+    check(levels == {"basica", "media"}, f"niveles del temario: {levels}")
     check(len(op_pl_1["audit_requirements"]) == 12)
 
 
@@ -610,7 +610,7 @@ async def test_audit_tool_filters_by_level(snapshot_server: MCPServer) -> None:
     everything = await _call_list(snapshot_server, "requisitos_auditoria", {})
 
     check(len(alto) > 0)
-    check(all(r["level"] == "alto" for r in alto))
+    check(all(r["level"] == "alta" for r in alto))
     check(len(alto) < len(everything), "el filtro por nivel no descartó nada")
 
 

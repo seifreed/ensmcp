@@ -12,6 +12,7 @@ from ensmcp.domain.models import (
     CategoryGroup,
     SecurityDimension,
     SecurityMeasure,
+    SystemCategory,
 )
 from ensmcp.scraping.parsers import parse_category, parse_measure
 from ensmcp.snapshot.codec import SCHEMA_VERSION, dump, load
@@ -28,7 +29,7 @@ _REQUIREMENTS = (
     AuditRequirement(
         position=0,
         code="1.1",
-        level=ApplicabilityLevel.ALTO,
+        level=SystemCategory.ALTA,
         essential=True,
         question="¿Se ha contratado protección frente a DoS?",
         note="NOTA: vale un servicio del proveedor de tránsito.",
@@ -38,7 +39,7 @@ _REQUIREMENTS = (
     AuditRequirement(
         position=1,
         code="1.1",
-        level=ApplicabilityLevel.ALTO,
+        level=SystemCategory.ALTA,
         essential=False,
         question="¿Se revisa periódicamente?",
     ),

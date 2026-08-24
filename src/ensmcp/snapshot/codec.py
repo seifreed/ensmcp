@@ -21,13 +21,14 @@ from collections.abc import Sequence
 from typing import Any
 
 from ensmcp.domain.models import (
-    ApplicabilityLevel,
     AuditRequirement,
     Category,
     CategoryGroup,
+    DimensionLevel,
     Reinforcement,
     SecurityDimension,
     SecurityMeasure,
+    SystemCategory,
 )
 from ensmcp.domain.queries import code_order
 from ensmcp.json_codec import load_object, require_string, require_unique
@@ -39,7 +40,21 @@ SCHEMA_VERSION = 3
 
 # Las tres celdas Bajo/Medio/Alto de la tabla, o ninguna: una medida construida
 # fuera del scraper no lleva ninguna, y de la tabla viva son siempre las tres.
-_RAW_LEVEL_COUNTS = frozenset({0, len(ApplicabilityLevel)})
+_RAW_LEVEL_COUNTS = frozenset({0, len(DimensionLevel)})
+
+
+def _snapshot_dimension_level(level: DimensionLevel) -> str:
+    """Keep the v3 file spelling while the public API uses ``bajo``."""
+    return "basico" if level is DimensionLevel.BAJO else level.value
+
+
+def _snapshot_category(category: SystemCategory) -> str:
+    """Keep the v3 file spelling while the public API uses ``basica``."""
+    return {
+        SystemCategory.BASICA: "basico",
+        SystemCategory.MEDIA: "medio",
+        SystemCategory.ALTA: "alto",
+    }[category]
 
 
 def _boolean(value: object, where: str) -> bool:
@@ -78,7 +93,7 @@ def _raw_levels(value: object) -> tuple[str, ...]:
     if len(value) not in _RAW_LEVEL_COUNTS:
         raise TypeError(
             f"raw_levels has {len(value)} cell(s), expected "
-            f"{len(ApplicabilityLevel)} (Bajo/Medio/Alto) or none"
+            f"{len(DimensionLevel)} (Bajo/Medio/Alto) or none"
         )
     return tuple(require_string(item, f"raw_levels[{index}]") for index, item in enumerate(value))
 
@@ -91,11 +106,11 @@ def _measure_to_json(measure: SecurityMeasure) -> dict[str, Any]:
         "norm_text": measure.norm_text,
         "category_code": measure.category_code,
         "dimensions": sorted(dimension.value for dimension in measure.dimensions),
-        "levels": sorted(level.value for level in measure.levels),
+        "levels": sorted(_snapshot_dimension_level(level) for level in measure.levels),
         "reinforcements": [
             {
                 "code": reinforcement.code,
-                "level": reinforcement.level.value,
+                "level": _snapshot_dimension_level(reinforcement.level),
                 "alternative": reinforcement.alternative,
                 "text": reinforcement.text,
             }
@@ -135,7 +150,7 @@ def _measure_to_json(measure: SecurityMeasure) -> dict[str, Any]:
             {
                 "position": requirement.position,
                 "code": requirement.code,
-                "level": requirement.level.value,
+                "level": _snapshot_category(requirement.level),
                 "essential": requirement.essential,
                 "question": requirement.question,
                 "note": requirement.note,
@@ -156,13 +171,13 @@ def _measure_from_json(payload: dict[str, Any]) -> SecurityMeasure:
         for index, value in enumerate(payload["dimensions"])
     ]
     levels = [
-        ApplicabilityLevel(require_string(value, f"measure.levels[{index}]"))
+        DimensionLevel(require_string(value, f"measure.levels[{index}]"))
         for index, value in enumerate(payload["levels"])
     ]
     reinforcements = [
         Reinforcement(
             code=require_string(item["code"], "reinforcement.code"),
-            level=ApplicabilityLevel(require_string(item["level"], "reinforcement.level")),
+            level=DimensionLevel(require_string(item["level"], "reinforcement.level")),
             alternative=_boolean(item["alternative"], "reinforcement.alternative"),
             text=require_string(item["text"], "reinforcement.text"),
         )
@@ -172,7 +187,7 @@ def _measure_from_json(payload: dict[str, Any]) -> SecurityMeasure:
         AuditRequirement(
             position=_integer(item["position"], "audit_requirement.position"),
             code=require_string(item["code"], "audit_requirement.code"),
-            level=ApplicabilityLevel(require_string(item["level"], "audit_requirement.level")),
+            level=SystemCategory(require_string(item["level"], "audit_requirement.level")),
             essential=_boolean(item["essential"], "audit_requirement.essential"),
             question=require_string(item["question"], "audit_requirement.question"),
             note=require_string(item["note"], "audit_requirement.note"),

@@ -38,7 +38,7 @@ from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from html.parser import HTMLParser
 
-from ensmcp.domain.models import ApplicabilityLevel, AuditRequirement
+from ensmcp.domain.models import AuditRequirement, SystemCategory
 
 # ponytail: the real requisitos.js is a single-quoted JS string with no escaped
 # single-quotes inside (verified against the fixture: exactly two "'" in the
@@ -53,9 +53,9 @@ _CODE_PATTERN = re.compile(r"^[a-z]+(?:\.[a-z]+)*\.\d+$")
 # and every requirement after it belongs to that level until the next header.
 _LEVEL_HEADER = re.compile(r'<div class="tittle-measure">([^<]*)</div>')
 _LEVEL_LABELS = {
-    "categoría básica": ApplicabilityLevel.BASICO,
-    "categoría media": ApplicabilityLevel.MEDIO,
-    "categoría alta": ApplicabilityLevel.ALTO,
+    "categoría básica": SystemCategory.BASICA,
+    "categoría media": SystemCategory.MEDIA,
+    "categoría alta": SystemCategory.ALTA,
 }
 
 # One requirement, of which only the question part is data: the sibling
@@ -245,7 +245,7 @@ def _split_requirements(segment: str) -> Iterator[str]:
         yield segment[start : starts[index + 1] if index + 1 < len(starts) else len(segment)]
 
 
-def _parse_level_label(label: str) -> ApplicabilityLevel:
+def _parse_level_label(label: str) -> SystemCategory:
     """Map a "Categoría Básica/Media/Alta" collapsible header to its level."""
     level = _LEVEL_LABELS.get(" ".join(label.split()).casefold())
     if level is None:

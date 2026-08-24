@@ -12,10 +12,12 @@ from ensmcp.domain.models import (
     ApplicabilityLevel,
     Category,
     CategoryGroup,
+    DimensionLevel,
     Guia808,
     Reinforcement,
     SecurityDimension,
     SecurityMeasure,
+    SystemCategory,
 )
 from tests.support import check
 
@@ -140,4 +142,5 @@ def test_security_dimension_values_are_the_ens_dimension_names() -> None:
 
 
 def test_applicability_level_values_are_the_ens_level_names() -> None:
-    check({level.value for level in ApplicabilityLevel} == {"basico", "medio", "alto"})
+    check({level.value for level in DimensionLevel} == {"bajo", "medio", "alto"})
+    check({category.value for category in SystemCategory} == {"basica", "media", "alta"})

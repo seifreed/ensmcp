@@ -95,11 +95,11 @@ async def test_the_wire_payload_writes_every_frozenset_sorted() -> None:
     ("tool", "arguments", "expected"),
     [
         # "Bajo" es la cabecera de la primera columna de niveles del Anexo II.
-        ("list_measures", {"level": "bajo"}, "level='bajo'"),
+        ("list_measures", {"level": "minimo"}, "level='minimo'"),
         ("list_measures", {"dimension": "confidencial"}, "dimension='confidencial'"),
         # BÁSICA/MEDIA/ALTA es como nombra el RD las categorías, y como este
         # mismo servidor contesta `categoria_sistema`.
-        ("requisitos_auditoria", {"level": "básica"}, "level='básica'"),
+        ("requisitos_auditoria", {"level": "categoria"}, "level='categoria'"),
         ("declaracion_aplicabilidad", {"confidencialidad": "ALTA"}, "confidencialidad='ALTA'"),
     ],
     ids=["bajo", "dimension-a-medias", "basica", "alta-en-mayusculas"],
@@ -125,7 +125,7 @@ async def test_a_bad_enum_argument_says_what_would_have_worked(
     # "ALTA" decirle que "'alta'" no vale le esconde la normalización.
     check(expected in message, f"no cita el argumento ni el valor: {message!r}")
     check("no es un valor válido" in message, f"mensaje inesperado: {message!r}")
-    for value in ("basico, medio, alto", "confidencialidad, integridad"):
+    for value in ("bajo, medio, alto", "basica, media, alta", "confidencialidad, integridad"):
         if value.split(",")[0] in message:
             break
     else:
