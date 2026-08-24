@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ensmcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Servidor MCP con las medidas de seguridad del ENS (Anexo II del RD 311/2022): matriz de aplicabilidad y checklist de auditoría, sin conexión"
 readme = "README.md"
 license = "MIT"

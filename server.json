@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.seifreed/ensmcp",
+  "title": "ensmcp",
+  "description": "Servidor MCP independiente para consultar el ENS y preparar aplicabilidad y auditoria offline.",
+  "repository": {
+    "url": "https://github.com/seifreed/ensmcp",
+    "source": "github"
+  },
+  "version": "0.1.1",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "ensmcp",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
