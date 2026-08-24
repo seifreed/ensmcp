@@ -257,6 +257,20 @@ async def test_refreshing_adopts_a_live_page_that_differs() -> None:
         check("build_snapshot.py" in str(status["detail"]))
 
 
+async def test_check_updates_does_not_adopt_live_data() -> None:
+    async with local_repository(_DIFFERENT_SITE) as live:
+        repository = RefreshingRepository(_shipped(), live, adopt_live=False)
+
+        await repository.refresh()
+
+        measures = (await repository.fetch_corpus())[1]
+        check(len(measures) == 73, "check-updates sustituyó el snapshot")
+        status = repository.status_payload()
+        check(status["live_check"] == LiveCheck.UPDATED.value)
+        check(status["captured_at"] == _shipped().captured_at)
+        check("no se han adoptado" in str(status["detail"]))
+
+
 async def test_adopting_the_live_page_restamps_what_is_being_served() -> None:
     # `captured_at` describe lo que se sirve, y tras adoptar la web eso ya no es
     # el fichero. Antes seguía reportando la fecha del snapshot descartado, con

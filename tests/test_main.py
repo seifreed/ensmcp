@@ -25,7 +25,7 @@ from mcp.client.stdio import stdio_client
 from mcp.server.mcpserver import MCPServer
 from mcp.types import CallToolResult
 
-from ensmcp.__main__ import LIVE_CHECK_ENV_VAR, build_wiring, main
+from ensmcp.__main__ import MODE_ENV_VAR, ServerMode, _parse_mode, build_wiring, main
 from tests.support import (
     CHOICE_MEASURE_ROW_HTML,
     CONTENT_PAGE_FILENAME,
@@ -197,6 +197,15 @@ def test_console_script_entry_point_resolves_to_main() -> None:
     )
 
 
+def test_cli_modes_are_explicit_and_offline_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv(MODE_ENV_VAR, raising=False)
+    monkeypatch.delenv("ENSMCP_LIVE_CHECK", raising=False)
+
+    check(_parse_mode([]) is ServerMode.OFFLINE)
+    check(_parse_mode(["--check-updates"]) is ServerMode.CHECK_UPDATES)
+    check(_parse_mode(["--live"]) is ServerMode.LIVE)
+
+
 def test_importing_the_module_does_not_start_the_server() -> None:
     # Covers the `if __name__ == "__main__":` guard's false branch: a plain
     # import (as opposed to `python -m ensmcp`) must not call main().
@@ -214,7 +223,7 @@ async def test_module_entry_point_serves_the_expected_tools() -> None:
     # temp profile dir) under test without needing the live site.
     env = dict(os.environ)
     env["COVERAGE_PROCESS_START"] = str(_REPO_ROOT / "pyproject.toml")
-    env[LIVE_CHECK_ENV_VAR] = "0"
+    env[MODE_ENV_VAR] = "offline"
     params = StdioServerParameters(
         command=sys.executable, args=["-m", "ensmcp"], cwd=str(_REPO_ROOT), env=env
     )
@@ -239,7 +248,6 @@ async def test_module_entry_point_serves_the_expected_tools() -> None:
             "requisitos_auditoria",
             "requisitos_articulos",
             "evidencias_auditoria",
-            "refresh_live_page",
             "snapshot_status",
         }
     )
@@ -252,7 +260,7 @@ async def test_the_cli_checks_the_live_site_on_startup() -> None:
     # immediately, and the comparison against the real site lands behind it.
     env = dict(os.environ)
     env["COVERAGE_PROCESS_START"] = str(_REPO_ROOT / "pyproject.toml")
-    env.pop(LIVE_CHECK_ENV_VAR, None)
+    env[MODE_ENV_VAR] = "live"
     params = StdioServerParameters(
         command=sys.executable, args=["-m", "ensmcp"], cwd=str(_REPO_ROOT), env=env
     )
@@ -323,7 +331,7 @@ async def test_the_env_var_keeps_the_cli_from_ever_checking_the_live_site() -> N
     """
     env = dict(os.environ)
     env["COVERAGE_PROCESS_START"] = str(_REPO_ROOT / "pyproject.toml")
-    env[LIVE_CHECK_ENV_VAR] = "0"
+    env[MODE_ENV_VAR] = "offline"
     params = StdioServerParameters(
         command=sys.executable, args=["-m", "ensmcp"], cwd=str(_REPO_ROOT), env=env
     )

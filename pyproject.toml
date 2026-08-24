@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ensmcp"
 version = "0.1.0"
-description = "Servidor MCP con las medidas de seguridad del ENS (Anexo II del RD 311/2022): Anexo II, Declaración de Aplicabilidad y alcance de auditoría, sin conexión"
+description = "Servidor MCP con las medidas de seguridad del ENS (Anexo II del RD 311/2022): matriz de aplicabilidad y checklist de auditoría, sin conexión"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -21,13 +21,15 @@ requires-python = ">=3.14"
 # `tests/test_packaging.py` mantiene los dos ficheros de acuerdo.
 dependencies = [
     "mcp>=2.0.0",
-    "patchright>=1.61.2",
 ]
 
 [project.scripts]
 ensmcp = "ensmcp.__main__:main"
 
 [project.optional-dependencies]
+live = [
+    "patchright>=1.61.2",
+]
 dev = [
     # `tests/test_packaging.py` compara los rangos de pyproject con lo que fija
     # el lock, y para eso necesita leer versiones y requisitos. Está declarado
@@ -42,6 +44,7 @@ dev = [
     "mypy>=1.13",
     "bandit>=1.8",
     "pip-audit>=2.7",
+    "patchright>=1.61.2",
 ]
 
 [tool.hatch.build.targets.wheel]
