@@ -117,4 +117,14 @@ jobs:
       - name: Authenticate to MCP Registry
         run: ./mcp-publisher login github-oidc
       - name: Publish server metadata
-        run: ./mcp-publisher publish
+        run: |
+          name="$(jq -r '.name' server.json)"
+          version="$(jq -r '.version' server.json)"
+          encoded_name="$(printf '%s' "$name" | jq -sRr @uri)"
+          if curl -fsS "https://registry.modelcontextprotocol.io/v0.1/servers?search=${encoded_name}" \
+            | jq -e --arg name "$name" --arg version "$version" \
+              '.servers[]?.server | select(.name == $name and .version == $version)' >/dev/null; then
+            echo "MCP server $name@$version is already published"
+          else
+            ./mcp-publisher publish
+          fi
