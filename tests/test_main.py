@@ -25,7 +25,7 @@ from mcp.client.stdio import stdio_client
 from mcp.server.mcpserver import MCPServer
 from mcp.types import CallToolResult
 
-from ensmcp.__main__ import MODE_ENV_VAR, ServerMode, _parse_mode, build_wiring, main
+from ensmcp.__main__ import MODE_ENV_VAR, ServerMode, _parse_mode, build_wiring, main, serve
 from tests.support import (
     CHOICE_MEASURE_ROW_HTML,
     CONTENT_PAGE_FILENAME,
@@ -215,6 +215,46 @@ def test_importing_the_module_does_not_start_the_server() -> None:
     module = importlib.import_module("ensmcp.__main__")
 
     check(hasattr(module, "main"))
+
+
+async def test_serve_live_mode_closes_the_session_on_shutdown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeSession:
+        closed = False
+
+        async def close(self) -> None:
+            self.closed = True
+
+    class FakeRepository:
+        started = False
+        closed = False
+
+        def start_background_check(self) -> None:
+            self.started = True
+
+        async def close(self) -> None:
+            self.closed = True
+
+    class FakeServer:
+        async def run_stdio_async(self) -> None:
+            return
+
+    session = FakeSession()
+    repository = FakeRepository()
+    server = FakeServer()
+
+    monkeypatch.setattr("ensmcp.scraping.live_session.LiveSession", lambda: session)
+    monkeypatch.setattr(
+        "ensmcp.__main__.build_wiring",
+        lambda current, *, adopt_live: (server, repository),
+    )
+
+    await serve(ServerMode.CHECK_UPDATES)
+
+    check(repository.started, "el modo live no programó la comprobación")
+    check(repository.closed, "el repositorio live no se cerró")
+    check(session.closed, "la sesión live no se cerró")
 
 
 async def test_module_entry_point_serves_the_expected_tools() -> None:
