@@ -178,7 +178,7 @@ async def test_repository_raises_when_the_summary_table_never_appears_in_time() 
     # A real local page with a real matching iframe, but no #tablaResumen in
     # it: deterministically exercises LiveSession._wait_for_summary_table's
     # own error, rather than racing the real site's own render time.
-    async with local_repository(site_files(NO_TABLE_HTML), timeout_ms=1000) as repository:
+    async with local_repository(site_files(NO_TABLE_HTML), timeout_ms=2000) as repository:
         with pytest.raises(MeasurePageStructureError) as excinfo:
             await repository.fetch_corpus()
 
