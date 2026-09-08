@@ -248,7 +248,7 @@ def resolve_profile_scope(
         source=f"system:{profile.profile_id}",
         information_assets=profile.information_assets,
         services=profile.services,
-        overrides=controls.overrides,
+        overrides=controls.overrides if subsystem_id is None else None,
     )
     if subsystem_id is None:
         return ResolvedProfileScope(profile.profile_id, profile.scope, base, controls)

@@ -11,8 +11,12 @@ from ensmcp.domain.profiles import (
     DimensionProfile,
     EffectiveDimension,
     ProfileComponent,
+    ResolvedComplianceProfile,
+    SubsystemProfile,
+    SystemProfile,
     effective_dimensions,
     resolve_compliance_profile,
+    resolve_profile_scope,
 )
 from tests.support import check, require
 
@@ -66,6 +70,26 @@ def test_subsystem_can_inherit_evidence_and_apply_a_profile_override() -> None:
     check(result[SecurityDimension.INTEGRIDAD].level is DimensionLevel.MEDIO)
     check(result[SecurityDimension.INTEGRIDAD].evidence[-1].source == "compliance_profile")
     check(result[SecurityDimension.AUTENTICIDAD].level is DimensionLevel.BAJO)
+
+
+def test_subsystem_applies_a_compliance_override_once() -> None:
+    profile = SystemProfile(
+        "portal",
+        "Portal",
+        "Sede",
+        dimensions=DimensionProfile(integridad=_assessment(DimensionLevel.ALTO, "valoración base")),
+        subsystems=(SubsystemProfile("backoffice", "Backoffice"),),
+    )
+    controls = ResolvedComplianceProfile(
+        overrides=DimensionProfile(
+            integridad=_assessment(DimensionLevel.MEDIO, "override sectorial")
+        )
+    )
+
+    result = resolve_profile_scope(profile, controls, "backoffice")
+    evidence = result.dimensions[SecurityDimension.INTEGRIDAD].evidence
+
+    check([item.source for item in evidence].count("compliance_profile") == 1)
 
 
 def test_compliance_profile_inheritance_resolves_child_precedence() -> None:
