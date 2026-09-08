@@ -87,3 +87,10 @@ def test_loader_rejects_missing_malformed_incompatible_and_ambiguous_packs(
     path.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="referencias duplicadas"):
         load_data_pack(path)
+
+    payload["mappings"] = [payload["mappings"][0]]
+    for invalid_reference in ("", " 5.1 "):
+        payload["mappings"][0]["external_reference"] = invalid_reference
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        with pytest.raises(ValueError, match="referencia inválida"):
+            load_data_pack(path)

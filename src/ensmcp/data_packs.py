@@ -24,6 +24,12 @@ def load_data_pack(path: Path) -> DataPack:
         raise ValueError(f"schema_version incompatible en data pack: {path}")
     if _PACK_ID.fullmatch(pack.pack_id) is None:
         raise ValueError(f"pack_id inválido en data pack: {path}")
+    if any(
+        not mapping.external_reference
+        or mapping.external_reference != mapping.external_reference.strip()
+        for mapping in pack.mappings
+    ):
+        raise ValueError(f"referencia inválida en data pack: {path}")
     references = [mapping.external_reference.casefold() for mapping in pack.mappings]
     if len(references) != len(set(references)):
         raise ValueError(f"referencias duplicadas en data pack: {path}")
