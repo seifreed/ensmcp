@@ -16,12 +16,13 @@ import json
 import re
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from ensmcp.domain.models import ApplicabilityLevel
+from ensmcp.domain.models import ApplicabilityLevel, Category, SecurityMeasure
 from ensmcp.scraping.live_session import LiveSession
 from ensmcp.scraping.navegable_repository import NavegableRepository
 from ensmcp.snapshot.codec import dump
@@ -636,27 +637,22 @@ async def test_the_comparison_baseline_never_moves_with_the_clock() -> None:
 
 
 async def test_going_back_to_the_file_gives_back_the_files_own_date() -> None:
-    """El retorno: la web difería, se adoptó, y luego vuelve a coincidir.
-
-    ``captured_at`` describe **lo que se sirve**, así que en cuanto lo servido
-    vuelve a ser el fichero byte a byte, su fecha tiene que volver a ser la del
-    fichero. Si se quedara la de la adopción, ``snapshot_status`` fecharía como
-    recién capturado un corpus que está en disco desde hace meses — y sería
-    justo la tool cuyo trabajo es decir cómo de fresco es el dato.
-
-    Los tests de arriba no lo veían: uno comprueba la ida (se adopta y la fecha
-    se mueve) y otro el caso limpio (coincide a la primera y no se mueve). El
-    que falta es el que pasa por los dos, y borrar la línea que restaura la
-    fecha no hacía fallar la suite entera.
-
-    La adopción previa se representa moviendo ``_captured_at``, como hace
-    ``test_the_comparison_baseline_never_moves_with_the_clock`` con la misma
-    justificación: montar un sitio que cambie dos veces bajo el navegador no
-    haría más cierto lo que se afirma aquí.
-    """
+    """Si la web revierte, estado, fecha y corpus servido vuelven al fichero."""
     snapshot = _shipped()
-    repository = RefreshingRepository(snapshot, _shipped())
-    repository._captured_at = "1999-01-01T00:00:00+00:00"
+    changed = replace(snapshot.measures[0], title="título live transitorio")
+
+    class RevertingRepository:
+        calls = 0
+
+        async def fetch_corpus(self) -> tuple[list[Category], list[SecurityMeasure]]:
+            self.calls += 1
+            measures = (changed, *snapshot.measures[1:]) if self.calls == 1 else snapshot.measures
+            return list(snapshot.categories), list(measures)
+
+    repository = RefreshingRepository(snapshot, RevertingRepository())
+
+    await repository.refresh()
+    check((await repository.fetch_corpus())[1][0].title == "título live transitorio")
 
     await repository.refresh()
 
@@ -666,3 +662,4 @@ async def test_going_back_to_the_file_gives_back_the_files_own_date() -> None:
         status["captured_at"] == snapshot.captured_at,
         f"sirve el fichero pero lo fecha como {status['captured_at']!r}",
     )
+    check((await repository.fetch_corpus())[1] == list(snapshot.measures))

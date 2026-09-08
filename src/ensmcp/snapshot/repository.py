@@ -324,6 +324,8 @@ class RefreshingRepository:
             # Lo que se sirve es, byte a byte, el fichero: su fecha es la del
             # fichero. También cuando se vuelve a él tras haber adoptado una web
             # que luego revirtió.
+            self._categories = tuple(categories)
+            self._measures = tuple(measures)
             self._captured_at = self._snapshot_captured_at
             self._check = LiveCheck.UNCHANGED
             self._detail = "la página en vivo coincide con el snapshot"
