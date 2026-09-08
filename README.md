@@ -284,6 +284,11 @@ Para inspeccionarlo manualmente:
 npx @modelcontextprotocol/inspector venv/bin/python -m ensmcp
 ```
 
+## Arquitectura
+
+La regla de dependencias, las capas y sus límites están documentados en
+[`ARCHITECTURE.md`](ARCHITECTURE.md) y protegidos por tests estructurales.
+
 ## Contribuir
 
 Las contribuciones son bienvenidas.

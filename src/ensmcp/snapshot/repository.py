@@ -67,44 +67,56 @@ def _corpus_diff(
     }
 
 
+def _validate_category(category: Category) -> None:
+    if (
+        not _CATEGORY_CODE.fullmatch(category.code)
+        or category.code.split(".")[0] != category.group.value
+    ):
+        raise ValueError(f"snapshot has an inconsistent category: {category.code!r}")
+
+
+def _validate_measure_code(measure: SecurityMeasure, category_codes: set[str]) -> None:
+    expected_category = measure.code.rsplit(".", 1)[0]
+    if (
+        not _MEASURE_CODE.fullmatch(measure.code)
+        or measure.category_code != expected_category
+        or measure.category_code not in category_codes
+    ):
+        raise ValueError(f"snapshot has an inconsistent measure code: {measure.code!r}")
+
+
+def _validate_measure_content(measure: SecurityMeasure) -> None:
+    if not measure.dimensions or not measure.levels:
+        raise ValueError(f"snapshot measure {measure.code!r} has no dimensions or levels")
+    if measure.raw_levels:
+        if parse_levels(measure.raw_levels) != measure.levels:
+            raise ValueError(f"snapshot measure {measure.code!r} contradicts its raw levels")
+        raw_reinforcements = {
+            (item.code, item.level, item.alternative)
+            for item in parse_reinforcements(measure.raw_levels)
+        }
+        stored_reinforcements = {
+            (item.code, item.level, item.alternative) for item in measure.reinforcements
+        }
+        if raw_reinforcements != stored_reinforcements:
+            raise ValueError(
+                f"snapshot measure {measure.code!r} contradicts its raw reinforcements"
+            )
+    if any(item.level not in measure.levels for item in measure.reinforcements):
+        raise ValueError(
+            f"snapshot measure {measure.code!r} has a reinforcement at an excluded level"
+        )
+
+
 def _validate_corpus(categories: Sequence[Category], measures: Sequence[SecurityMeasure]) -> None:
     if not categories or not measures:
         raise ValueError("snapshot has no categories or security measures")
     category_codes = {category.code for category in categories}
     for category in categories:
-        if (
-            not _CATEGORY_CODE.fullmatch(category.code)
-            or category.code.split(".")[0] != category.group.value
-        ):
-            raise ValueError(f"snapshot has an inconsistent category: {category.code!r}")
+        _validate_category(category)
     for measure in measures:
-        expected_category = measure.code.rsplit(".", 1)[0]
-        if (
-            not _MEASURE_CODE.fullmatch(measure.code)
-            or measure.category_code != expected_category
-            or measure.category_code not in category_codes
-        ):
-            raise ValueError(f"snapshot has an inconsistent measure code: {measure.code!r}")
-        if not measure.dimensions or not measure.levels:
-            raise ValueError(f"snapshot measure {measure.code!r} has no dimensions or levels")
-        if measure.raw_levels:
-            if parse_levels(measure.raw_levels) != measure.levels:
-                raise ValueError(f"snapshot measure {measure.code!r} contradicts its raw levels")
-            raw_reinforcements = {
-                (item.code, item.level, item.alternative)
-                for item in parse_reinforcements(measure.raw_levels)
-            }
-            stored_reinforcements = {
-                (item.code, item.level, item.alternative) for item in measure.reinforcements
-            }
-            if raw_reinforcements != stored_reinforcements:
-                raise ValueError(
-                    f"snapshot measure {measure.code!r} contradicts its raw reinforcements"
-                )
-        if any(item.level not in measure.levels for item in measure.reinforcements):
-            raise ValueError(
-                f"snapshot measure {measure.code!r} has a reinforcement at an excluded level"
-            )
+        _validate_measure_code(measure, category_codes)
+        _validate_measure_content(measure)
 
 
 class LiveCheck(Enum):

@@ -1,1 +1,1 @@
-"""Application projections and use-case services."""
+"""Application-level projections."""
