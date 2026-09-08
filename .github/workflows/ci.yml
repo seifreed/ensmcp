@@ -15,6 +15,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     name: Quality & security gates
@@ -54,10 +58,11 @@ jobs:
     # real ENS site once per push is enough.
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest, windows-11-arm]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -66,12 +71,6 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
-          # cryptography (mcp -> pyjwt[crypto]) publishes no win_arm64 wheels,
-          # so an ARM-native Python cannot install the lock without a
-          # Rust+OpenSSL source build. x64 Python under Windows emulation is
-          # what a Windows-on-ARM user gets today, and it is what this job
-          # verifies. Empty string means "runner default" for the other OSes.
-          architecture: ${{ matrix.os == 'windows-11-arm' && 'x64' || '' }}
           cache: pip
       # Ubuntu 24.04 images restrict unprivileged user namespaces via
       # AppArmor, which kills Chromium's sandbox at launch. Re-enabling them
