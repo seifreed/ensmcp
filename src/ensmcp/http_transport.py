@@ -76,10 +76,13 @@ class SecureBearerMiddleware:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
-        headers = {
-            key.decode("latin-1").lower(): value.decode("latin-1")
-            for key, value in scope.get("headers", ())
-        }
+        headers: dict[str, str] = {}
+        for raw_key, raw_value in scope.get("headers", ()):
+            key = raw_key.decode("latin-1").lower()
+            if key in headers and key in {"host", "origin", "authorization"}:
+                await _response(send, 400, "invalid_headers", "Duplicate security header")
+                return
+            headers[key] = raw_value.decode("latin-1")
         host = headers.get("host", "")
         if not _matches(host, self.allowed_hosts):
             await _response(send, 421, "invalid_host", "Invalid Host header")

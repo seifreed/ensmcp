@@ -26,6 +26,7 @@ async def _request(
     host: str = "127.0.0.1",
     origin: str | None = None,
     scope_type: str = "http",
+    extra_headers: tuple[tuple[bytes, bytes], ...] = (),
 ) -> tuple[list[Message], bool]:
     reached = False
 
@@ -44,6 +45,7 @@ async def _request(
         headers.append((b"authorization", authorization.encode()))
     if origin is not None:
         headers.append((b"origin", origin.encode()))
+    headers.extend(extra_headers)
     messages: list[Message] = []
 
     async def receive() -> Message:
@@ -122,6 +124,13 @@ async def test_bearer_middleware_rejects_untrusted_requests() -> None:
     messages, reached = await _request(scope_type="lifespan")
     check(messages == [])
     check(reached)
+
+    messages, reached = await _request(
+        "Bearer wrong",
+        extra_headers=((b"authorization", f"Bearer {TOKEN}".encode()),),
+    )
+    check(messages[0]["status"] == 400)
+    check(not reached)
 
 
 def test_streamable_http_initializes_with_authentication() -> None:
