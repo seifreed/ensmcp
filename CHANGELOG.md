@@ -8,6 +8,7 @@
 
 ## Unreleased
 
+- Transporte MCP Streamable HTTP autenticado, limitado a loopback y protegido frente a Host/Origin no autorizados.
 - Data packs externos versionados y crosswalks parciales ISO 27001/DORA; el pack NIS2 registra como retirada la fuente oficial anterior.
 - DdA persistentes con responsables, evidencias, excepciones, compensaciones, vigilancia y fechas; exportación JSON, CSV, Markdown, XLSX, ODS y DOCX.
 - Perfiles completos de sistema, subsistemas heredables y explicación de aplicabilidad.

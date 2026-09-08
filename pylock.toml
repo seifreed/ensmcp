@@ -1790,7 +1790,6 @@ wheels = [{ url = "https://files.pythonhosted.org/packages/7f/3e/5db95bcf282c527
 
 [[packages]]
 name = "uvicorn"
-version = "0.52.1"
-marker = "sys_platform != 'emscripten'"
-sdist = { url = "https://files.pythonhosted.org/packages/03/18/ccce41535dee1be77735592bd19965f3972c82e07ee703d324709496b716/uvicorn-0.52.1.tar.gz", upload-time = 2026-08-01T18:19:30Z, size = 100571, hashes = { sha256 = "112ec661814189acbccd3f7b86460147cc065fc92c0821afa78918780e4354dd" } }
-wheels = [{ url = "https://files.pythonhosted.org/packages/c7/d5/68e6e9bca63c0badf67002890a46d3784c958de45b65e1275ec583ca1f06/uvicorn-0.52.1-py3-none-any.whl", upload-time = 2026-08-01T18:19:29Z, size = 79859, hashes = { sha256 = "e4403f9d93188cf9d1088e9f40e3acd12630e2df8675316704379a7fc20fff6a" } }]
+version = "0.52.4"
+sdist = { url = "https://files.pythonhosted.org/packages/f2/0f/3f86e61397dd33bf2ccf28188c40db6a740658aeebbbf6e7dbc101a1f487/uvicorn-0.52.4.tar.gz", upload-time = 2026-08-19T06:27:41Z, size = 100627, hashes = { sha256 = "73acfee47a0b133c5de13d219492d62d8a31e935f4fe6e41a232451a15379f86" } }
+wheels = [{ url = "https://files.pythonhosted.org/packages/f1/79/4a20b54ab0491485ccd8c077db2d39187c7f12b3e15485d38a7be37c81b4/uvicorn-0.52.4-py3-none-any.whl", upload-time = 2026-08-19T06:27:40Z, size = 79871, hashes = { sha256 = "f86e41a149d7d05a9969337e3946a9c171c06a5d42680896daaba624aeac8da1" } }]

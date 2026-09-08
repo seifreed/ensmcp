@@ -25,7 +25,20 @@ from mcp.client.stdio import stdio_client
 from mcp.server.mcpserver import MCPServer
 from mcp.types import CallToolResult
 
-from ensmcp.__main__ import MODE_ENV_VAR, ServerMode, _parse_mode, build_wiring, main, serve
+from ensmcp.__main__ import (
+    HTTP_TOKEN_ENV_VAR,
+    MODE_ENV_VAR,
+    TRANSPORT_ENV_VAR,
+    ServerMode,
+    ServerTransport,
+    _http_settings,
+    _parse_mode,
+    _parse_options,
+    build_wiring,
+    main,
+    serve,
+)
+from ensmcp.http_transport import HTTPSettings
 from tests.support import (
     CHOICE_MEASURE_ROW_HTML,
     CONTENT_PAGE_FILENAME,
@@ -209,6 +222,47 @@ def test_cli_modes_are_explicit_and_offline_by_default(monkeypatch: pytest.Monke
         _parse_mode([])
 
 
+def test_cli_selects_and_validates_http_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv(TRANSPORT_ENV_VAR, raising=False)
+    options = _parse_options([])
+    check(options.transport is ServerTransport.STDIO)
+    check(_http_settings(options) is None)
+
+    monkeypatch.setenv(TRANSPORT_ENV_VAR, "http")
+    monkeypatch.setenv(HTTP_TOKEN_ENV_VAR, "x" * 32)
+    options = _parse_options(
+        [
+            "--host",
+            "localhost",
+            "--port",
+            "8123",
+            "--allow-host",
+            "proxy.example",
+            "--allow-origin",
+            "https://client.example",
+        ]
+    )
+    settings = require(_http_settings(options), "HTTP transport should produce settings")
+    check(settings.host == "localhost" and settings.port == 8123)
+    check(settings.allowed_hosts == ("proxy.example",))
+    check(settings.allowed_origins == ("https://client.example",))
+
+    monkeypatch.setenv(TRANSPORT_ENV_VAR, "unknown")
+    with pytest.raises(SystemExit, match="ENSMCP_TRANSPORT debe ser uno de"):
+        _parse_options([])
+
+
+def test_http_cli_requires_a_valid_named_token(monkeypatch: pytest.MonkeyPatch) -> None:
+    options = _parse_options(["--transport", "http", "--auth-token-env", "CUSTOM_TOKEN"])
+    monkeypatch.delenv("CUSTOM_TOKEN", raising=False)
+    with pytest.raises(SystemExit, match="CUSTOM_TOKEN"):
+        _http_settings(options)
+
+    monkeypatch.setenv("CUSTOM_TOKEN", "short")
+    with pytest.raises(SystemExit, match="al menos 32"):
+        _http_settings(options)
+
+
 def test_importing_the_module_does_not_start_the_server() -> None:
     # Covers the `if __name__ == "__main__":` guard's false branch: a plain
     # import (as opposed to `python -m ensmcp`) must not call main().
@@ -255,6 +309,33 @@ async def test_serve_live_mode_closes_the_session_on_shutdown(
     check(repository.started, "el modo live no programó la comprobación")
     check(repository.closed, "el repositorio live no se cerró")
     check(session.closed, "la sesión live no se cerró")
+
+
+async def test_serve_uses_http_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeRepository:
+        closed = False
+
+        async def close(self) -> None:
+            self.closed = True
+
+    repository = FakeRepository()
+    server = object()
+    seen: list[tuple[object, HTTPSettings]] = []
+    settings = HTTPSettings(token="x" * 32)
+
+    monkeypatch.setattr(
+        "ensmcp.__main__.build_wiring",
+        lambda current, *, adopt_live: (server, repository),
+    )
+
+    async def fake_run(current: object, current_settings: HTTPSettings) -> None:
+        seen.append((current, current_settings))
+
+    monkeypatch.setattr("ensmcp.__main__.run_http_server", fake_run)
+    await serve(http=settings)
+
+    check(seen == [(server, settings)])
+    check(repository.closed)
 
 
 async def test_module_entry_point_serves_the_expected_tools() -> None:

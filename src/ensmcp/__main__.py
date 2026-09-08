@@ -11,6 +11,7 @@ import argparse
 import asyncio
 import os
 from collections.abc import Sequence
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
@@ -20,6 +21,7 @@ from ensmcp.data_packs import load_configured_data_packs
 from ensmcp.dda_export import export_dda
 from ensmcp.dda_store import FileDDAStore
 from ensmcp.guia.loader import load_packaged_guide
+from ensmcp.http_transport import HTTPSettings, run_http_server
 from ensmcp.mcp_server.server import build_server
 from ensmcp.snapshot.repository import RefreshingRepository, SnapshotRepository
 
@@ -28,6 +30,8 @@ if TYPE_CHECKING:
 
 MODE_ENV_VAR = "ENSMCP_MODE"
 LIVE_CHECK_ENV_VAR = "ENSMCP_LIVE_CHECK"  # backwards-compatible override
+TRANSPORT_ENV_VAR = "ENSMCP_TRANSPORT"
+HTTP_TOKEN_ENV_VAR = "ENSMCP_HTTP_TOKEN"  # nosec B105  # noqa: S105 - variable name only
 
 
 class ServerMode(StrEnum):
@@ -36,7 +40,23 @@ class ServerMode(StrEnum):
     LIVE = "live"
 
 
-def _parse_mode(argv: Sequence[str] | None = None) -> ServerMode:
+class ServerTransport(StrEnum):
+    STDIO = "stdio"
+    HTTP = "http"
+
+
+@dataclass(frozen=True, slots=True)
+class CLIOptions:
+    mode: ServerMode
+    transport: ServerTransport
+    host: str
+    port: int
+    auth_token_env: str
+    allowed_hosts: tuple[str, ...]
+    allowed_origins: tuple[str, ...]
+
+
+def _parse_options(argv: Sequence[str] | None = None) -> CLIOptions:
     parser = argparse.ArgumentParser(description="Servidor MCP del ENS")
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--offline", dest="mode", action="store_const", const=ServerMode.OFFLINE)
@@ -44,18 +64,67 @@ def _parse_mode(argv: Sequence[str] | None = None) -> ServerMode:
         "--check-updates", dest="mode", action="store_const", const=ServerMode.CHECK_UPDATES
     )
     modes.add_argument("--live", dest="mode", action="store_const", const=ServerMode.LIVE)
+    parser.add_argument("--transport", choices=tuple(ServerTransport))
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--auth-token-env", default=HTTP_TOKEN_ENV_VAR)
+    parser.add_argument("--allow-host", action="append", default=[])
+    parser.add_argument("--allow-origin", action="append", default=[])
     args = parser.parse_args(argv)
     if isinstance(args.mode, ServerMode):
-        return args.mode
-    configured = os.environ.get(MODE_ENV_VAR)
-    if configured is None:
-        legacy = os.environ.get(LIVE_CHECK_ENV_VAR)
-        configured = "offline" if legacy == "0" else ("live" if legacy else "offline")
+        mode = args.mode
+    else:
+        configured = os.environ.get(MODE_ENV_VAR)
+        if configured is None:
+            legacy = os.environ.get(LIVE_CHECK_ENV_VAR)
+            configured = "offline" if legacy == "0" else ("live" if legacy else "offline")
+        try:
+            mode = ServerMode(configured)
+        except ValueError as exc:
+            valid = ", ".join(item.value for item in ServerMode)
+            raise SystemExit(f"{MODE_ENV_VAR} debe ser uno de: {valid}") from exc
+
+    configured_transport = args.transport or os.environ.get(
+        TRANSPORT_ENV_VAR, ServerTransport.STDIO
+    )
     try:
-        return ServerMode(configured)
+        transport = ServerTransport(configured_transport)
     except ValueError as exc:
-        valid = ", ".join(mode.value for mode in ServerMode)
-        raise SystemExit(f"{MODE_ENV_VAR} debe ser uno de: {valid}") from exc
+        valid = ", ".join(item.value for item in ServerTransport)
+        raise SystemExit(f"{TRANSPORT_ENV_VAR} debe ser uno de: {valid}") from exc
+    return CLIOptions(
+        mode=mode,
+        transport=transport,
+        host=args.host,
+        port=args.port,
+        auth_token_env=args.auth_token_env,
+        allowed_hosts=tuple(args.allow_host),
+        allowed_origins=tuple(args.allow_origin),
+    )
+
+
+def _parse_mode(argv: Sequence[str] | None = None) -> ServerMode:
+    return _parse_options(argv).mode
+
+
+def _http_settings(options: CLIOptions) -> HTTPSettings | None:
+    if options.transport is ServerTransport.STDIO:
+        return None
+    token = os.environ.get(options.auth_token_env)
+    if not token:
+        raise SystemExit(
+            f"el transporte HTTP requiere un token en la variable {options.auth_token_env}"
+        )
+    try:
+        return HTTPSettings(
+            token=token,
+            host=options.host,
+            port=options.port,
+            allowed_hosts=options.allowed_hosts,
+            allowed_origins=options.allowed_origins,
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
 
 
 def build_wiring(
@@ -116,8 +185,8 @@ def build_wiring(
     return server, repo
 
 
-async def serve(mode: ServerMode = ServerMode.OFFLINE) -> None:
-    """Serve over stdio, tearing the browser down on the *same* event loop.
+async def serve(mode: ServerMode = ServerMode.OFFLINE, http: HTTPSettings | None = None) -> None:
+    """Serve over the selected transport and tear down on the *same* event loop.
 
     ``MCPServer.run()`` is just ``anyio.run(run_stdio_async)``: it spins up its
     own event loop and closes it on return. The browser is started lazily
@@ -128,7 +197,7 @@ async def serve(mode: ServerMode = ServerMode.OFFLINE) -> None:
     close had still not returned at a 25s cut-off, leaving the headed Chrome
     process and its temp profile directory behind on every shutdown.
 
-    Awaiting ``run_stdio_async()`` here keeps serving and teardown on one loop,
+    Awaiting the selected server here keeps serving and teardown on one loop,
     so the ``finally`` can actually reach the browser.
 
     Shutdown is driven by the client closing stdin, which is how MCP clients
@@ -151,7 +220,10 @@ async def serve(mode: ServerMode = ServerMode.OFFLINE) -> None:
     if mode is not ServerMode.OFFLINE:
         repo.start_background_check()
     try:
-        await server.run_stdio_async()
+        if http is None:
+            await server.run_stdio_async()
+        else:
+            await run_http_server(server, http)
     finally:
         # Cancel the check before closing the browser it may still be using —
         # and in its own ``try``, so that ordering cannot become a way to skip
@@ -167,8 +239,9 @@ async def serve(mode: ServerMode = ServerMode.OFFLINE) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> None:
-    """Run the stdio MCP server until the client closes stdin."""
-    asyncio.run(serve(_parse_mode(argv)))
+    """Run the MCP server until its selected transport stops."""
+    options = _parse_options(argv)
+    asyncio.run(serve(options.mode, _http_settings(options)))
 
 
 if __name__ == "__main__":

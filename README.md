@@ -38,7 +38,7 @@ Además del Anexo II, incorpora el cuestionario de verificación de la **guía C
 
 | Característica | Descripción |
 |----------------|-------------|
-| **Servidor MCP sobre stdio** | Integrable en Claude Desktop, Claude Code y otros clientes MCP |
+| **Transportes MCP** | `stdio` por defecto y Streamable HTTP autenticado para despliegues controlados |
 | **Funciona sin conexión** | El corpus completo viaja como snapshot en el paquete |
 | **Snapshot determinista** | El modo predeterminado sirve siempre el corpus empaquetado |
 | **Comprobación explícita** | `--check-updates` detecta cambios sin sustituir los datos servidos |
@@ -170,6 +170,33 @@ ensmcp --live
 ```
 
 También puede configurarse con `ENSMCP_MODE=offline|check-updates|live`.
+
+### Streamable HTTP autenticado
+
+El transporte HTTP escucha únicamente en loopback y exige un Bearer token de al menos 32 caracteres:
+
+```bash
+export ENSMCP_HTTP_TOKEN="$(openssl rand -hex 32)"
+ensmcp --transport http
+```
+
+El endpoint MCP queda en `http://127.0.0.1:8000/mcp`. Los clientes deben enviar
+`Authorization: Bearer $ENSMCP_HTTP_TOKEN`. Un cliente web también necesita que
+su Origin se autorice de forma exacta:
+
+```bash
+ensmcp --transport http --allow-origin https://cliente.example
+```
+
+`ENSMCP_TRANSPORT=http` selecciona el mismo transporte. `--host` sólo acepta
+`127.0.0.1`, `localhost`, `::1` u otra dirección loopback; `--port` cambia el
+puerto. Si un proxy inverso conserva un Host distinto, se autoriza con
+`--allow-host mcp.example`.
+
+Para acceso desde otra máquina, mantén `ensmcp` en loopback y publícalo tras un
+proxy inverso con TLS. El token nunca debe ir en la URL. Este modo implementa
+autenticación por secreto compartido, no el flujo OAuth 2.1 para servicios MCP
+públicos o multiusuario; esos despliegues necesitan un gateway OAuth compatible.
 
 ### Data packs independientes
 
