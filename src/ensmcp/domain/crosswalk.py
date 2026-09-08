@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -49,3 +50,32 @@ class DataPack:
     notes: str
     mappings: tuple[CrosswalkEntry, ...]
     schema_version: int = DATA_PACK_SCHEMA_VERSION
+
+
+def query_crosswalk_entries(
+    pack: DataPack,
+    known_ens_codes: Collection[str],
+    ens_code: str | None = None,
+    external_reference: str | None = None,
+) -> tuple[CrosswalkEntry, ...]:
+    """Validate and filter one data pack against the current ENS corpus."""
+    unknown_codes = sorted(
+        {
+            code
+            for mapping in pack.mappings
+            for code in mapping.ens_measure_codes
+            if code not in known_ens_codes
+        }
+    )
+    if unknown_codes:
+        raise ValueError(
+            f"data pack {pack.pack_id!r} contiene medidas ENS desconocidas: {unknown_codes}"
+        )
+
+    wanted_reference = external_reference.strip().casefold() if external_reference else None
+    return tuple(
+        mapping
+        for mapping in pack.mappings
+        if (ens_code is None or ens_code in mapping.ens_measure_codes)
+        and (wanted_reference is None or mapping.external_reference.casefold() == wanted_reference)
+    )

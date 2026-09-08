@@ -12,7 +12,8 @@ from odf.table import Table, TableCell, TableRow  # type: ignore[import-untyped]
 from odf.text import P  # type: ignore[import-untyped]
 from openpyxl import Workbook  # type: ignore[import-untyped]
 
-from ensmcp.domain.dda import DDARecord, ExportedDocument, ExportFormat, dda_to_dict
+from ensmcp.application.dda import dda_to_dict
+from ensmcp.domain.dda import DDARecord, ExportedDocument, ExportFormat
 
 
 def _row(record: DDARecord, index: int) -> dict[str, object]:

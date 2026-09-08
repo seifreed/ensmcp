@@ -5,14 +5,13 @@ from typing import Any
 
 import pytest
 
+from ensmcp.application.dda import dda_summary, dda_to_dict
 from ensmcp.domain.dda import (
     DDAMeasure,
     DDAMeasureUpdate,
     DDARecord,
     DDAReinforcement,
     ImplementationStatus,
-    dda_summary,
-    dda_to_dict,
     update_dda_measure,
 )
 from ensmcp.domain.models import DimensionLevel, SystemCategory

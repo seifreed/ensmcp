@@ -7,7 +7,7 @@ from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 
-from ensmcp.domain.crosswalk import DataPack, DataPackStatus
+from ensmcp.domain.crosswalk import DataPack, DataPackStatus, query_crosswalk_entries
 from ensmcp.domain.repository import MeasureRepository
 from ensmcp.mcp_server.annotations import READ_ONLY
 from ensmcp.mcp_server.boundary import (
@@ -52,32 +52,15 @@ def register_crosswalk_tools(
             )
 
         _, measures = await repository.fetch_corpus()
-        known_codes = {measure.code for measure in measures}
-        unknown_codes = sorted(
-            {
-                code
-                for mapping in pack.mappings
-                for code in mapping.ens_measure_codes
-                if code not in known_codes
-            }
-        )
-        if unknown_codes:
-            raise ValueError(
-                f"data pack {pack.pack_id!r} contiene medidas ENS desconocidas: {unknown_codes}"
-            )
         normalized_code = _normalize_filter_value(ens_code)
         if normalized_code is not None:
             normalized_code = _require_measure(measures, normalized_code).code
-        normalized_reference = external_reference.strip().casefold() if external_reference else None
-        mappings = [
-            mapping
-            for mapping in pack.mappings
-            if (normalized_code is None or normalized_code in mapping.ens_measure_codes)
-            and (
-                normalized_reference is None
-                or mapping.external_reference.casefold() == normalized_reference
-            )
-        ]
+        mappings = query_crosswalk_entries(
+            pack,
+            {measure.code for measure in measures},
+            normalized_code,
+            external_reference,
+        )
         payload = _data_pack_to_dict(pack)
         payload["mappings"] = _paginate(
             [
