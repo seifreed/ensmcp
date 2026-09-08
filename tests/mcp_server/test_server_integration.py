@@ -111,11 +111,9 @@ async def _call_list(
     return payload
 
 
-async def _call_measure_or_none(
-    server: MCPServer, name: str, arguments: dict[str, Any]
-) -> dict[str, Any] | None:
+async def _call_measure(server: MCPServer, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     result = await _call_result(server, name, arguments)
-    payload: dict[str, Any] | None = (result.structured_content or {})["result"]
+    payload: dict[str, Any] = result.structured_content or {}
     return payload
 
 
@@ -246,9 +244,7 @@ async def test_measure_payload_distinguishes_a_choice_from_a_requirement(
     # "+ [R2 o R3 o R4] + R5" (pick one, and R5 as well). A client reading
     # `alternative` has to be able to tell those apart from op.exp.8-style
     # "+ R1 + R2", or it will state four requirements where the ENS has one.
-    measure = require(
-        await _call_measure_or_none(local_server, "get_measure", {"code": "op.acc.5"})
-    )
+    measure = require(await _call_measure(local_server, "get_measure", {"code": "op.acc.5"}))
 
     basico = [r for r in measure["reinforcements"] if r["level"] == "bajo"]
     check(sorted(r["code"] for r in basico) == ["R1", "R2", "R3", "R4"])
@@ -309,17 +305,16 @@ async def test_list_measures_tool_rejects_an_invalid_level_as_a_tool_error(
 async def test_get_measure_tool_returns_a_known_foundational_measure(
     local_server: MCPServer,
 ) -> None:
-    measure = require(await _call_measure_or_none(local_server, "get_measure", {"code": "org.1"}))
+    measure = await _call_measure(local_server, "get_measure", {"code": "org.1"})
 
     check(measure["code"] == "org.1")
     check(len(measure["dimensions"]) > 0)
     check(len(measure["levels"]) > 0)
 
 
-async def test_get_measure_tool_returns_none_for_an_unknown_code(local_server: MCPServer) -> None:
-    measure = await _call_measure_or_none(local_server, "get_measure", {"code": "zz.999"})
-
-    check(measure is None)
+async def test_get_measure_tool_rejects_an_unknown_code(local_server: MCPServer) -> None:
+    with pytest.raises(ToolError, match=r"code='zz\.999'.*no es ninguna medida"):
+        await local_server.call_tool("get_measure", {"code": "zz.999"})
 
 
 @pytest.mark.parametrize("code", [" org.1 ", "ORG.1", " ORG.1 "])
@@ -328,7 +323,7 @@ async def test_get_measure_tool_normalizes_the_code(local_server: MCPServer, cod
     # to the same measure, not silently report "not found" (the pre-fix
     # behaviour) — the boundary normalization ``list_measures``'s category_code
     # already had (strip + casefold), which ``get_measure`` lacked.
-    measure = require(await _call_measure_or_none(local_server, "get_measure", {"code": code}))
+    measure = await _call_measure(local_server, "get_measure", {"code": code})
 
     check(measure["code"] == "org.1")
 
@@ -395,7 +390,7 @@ async def test_list_measures_tool_treats_whitespace_dimension_as_no_filter(
 async def test_refresh_tool_reloads_the_live_page(local_server: MCPServer) -> None:
     # Warm the session, then call refresh and assert the tool reports ok.
     # dict[str, str] returns use a RootModel, unlike list/Optional returns
-    # (_call_list/_call_measure_or_none), so structured_content is the plain
+    # (_call_list/_call_measure), so structured_content is the plain
     # dict itself with no "result" wrapper key.
     await _call_list(local_server, "list_measures", {})
     result = await _call_result(local_server, "refresh_live_page", {})
@@ -434,7 +429,13 @@ async def test_server_exposes_typed_resources_and_tool_annotations(
     resources = await snapshot_server.list_resources()
     resource_uris = {str(resource.uri) for resource in resources}
     check(
-        {"ens://anexo-ii", "ens://data/status", "ens://guide/808/articles"} <= resource_uris,
+        {
+            "ens://anexo-ii",
+            "ens://data/status",
+            "ens://guide/808/articles",
+            "ens://schemas/v1/tools",
+        }
+        <= resource_uris,
         f"recursos registrados: {resource_uris}",
     )
 
@@ -460,6 +461,16 @@ async def test_server_exposes_typed_resources_and_tool_annotations(
 
     tools = {tool.name: tool for tool in await snapshot_server.list_tools()}
     check(all(tool.output_schema for tool in tools.values()))
+    contents = await snapshot_server.read_resource("ens://schemas/v1/tools")
+    catalog = json.loads(_resource_text(contents))
+    check(catalog["schema_version"] == "1.0.0")
+    for name, tool in tools.items():
+        check(catalog["tools"][name]["inputSchema"] == tool.input_schema)
+        check(catalog["tools"][name]["outputSchema"] == tool.output_schema)
+        contents = await snapshot_server.read_resource(f"ens://schemas/v1/tools/{name}")
+        check(json.loads(_resource_text(contents)) == catalog["tools"][name])
+    with pytest.raises(ResourceError):
+        await snapshot_server.read_resource("ens://schemas/v1/tools/unknown")
     search_annotations = require(tools["search_measures"].annotations)
     check(search_annotations.read_only_hint is True)
 
@@ -472,6 +483,10 @@ async def test_server_exposes_typed_resources_and_tool_annotations(
         status=lambda: {"source": "snapshot"},
     )
     live_tools = {tool.name: tool for tool in await live_server.list_tools()}
+    check(set(catalog["tools"]) == set(tools) | set(live_tools))
+    for name, tool in live_tools.items():
+        check(catalog["tools"][name]["inputSchema"] == tool.input_schema)
+        check(catalog["tools"][name]["outputSchema"] == tool.output_schema)
     refresh_annotations = require(live_tools["refresh_live_page"].annotations)
     check(refresh_annotations.open_world_hint is True)
     contents = await live_server.read_resource("ens://data/status")

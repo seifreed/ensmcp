@@ -40,6 +40,7 @@ from ensmcp.domain.queries import (
     system_category,
 )
 from ensmcp.domain.repository import MeasureRepository
+from ensmcp.schema_catalog import load_schema_catalog
 
 RefreshHandler = Callable[[], Awaitable[None]]
 # Returns whatever the data source wants to report about its own freshness. The
@@ -385,6 +386,13 @@ _NO_SUCH_CATEGORY = (
 )
 
 
+def _require_measure(measures: Sequence[SecurityMeasure], raw: str) -> SecurityMeasure:
+    measure = find_measure_by_code(measures, _normalize(raw))
+    if measure is None:
+        raise ValueError(f"code={raw!r} {_NO_SUCH_MEASURE}")
+    return measure
+
+
 def _parse_optional_enum[E: Enum](enum_type: type[E], raw: str | None, argument: str) -> E | None:
     """Resolve one enum-valued tool argument, or say what would have worked.
 
@@ -481,6 +489,29 @@ def build_server(
         )
 
     @server.resource(
+        "ens://schemas/v1/tools",
+        name="tool-schemas",
+        title="ensmcp tool schemas v1",
+        description="Catálogo versionado de schemas de entrada y salida de las tools.",
+        mime_type="application/schema+json",
+    )
+    async def tool_schemas_resource() -> str:
+        return _resource_json(load_schema_catalog())
+
+    @server.resource(
+        "ens://schemas/v1/tools/{name}",
+        name="tool-schema",
+        title="ensmcp tool schema v1",
+        description="Schema versionado de una tool concreta.",
+        mime_type="application/schema+json",
+    )
+    async def tool_schema_resource(name: str) -> str:
+        schemas = load_schema_catalog()["tools"]
+        if name not in schemas:
+            raise ValueError(f"{name!r} no es una tool publicada en el schema v1")
+        return _resource_json(schemas[name])
+
+    @server.resource(
         "ens://measures/{code}",
         name="measure",
         title="ENS measure",
@@ -489,10 +520,7 @@ def build_server(
     )
     async def measure_resource(code: str) -> str:
         _, measures = await repository.fetch_corpus()
-        measure = find_measure_by_code(measures, _normalize(code))
-        if measure is None:
-            raise ValueError(f"{code!r} no es una medida del Anexo II")
-        return _resource_json(_measure_to_dict(measure))
+        return _resource_json(_measure_to_dict(_require_measure(measures, code)))
 
     @server.resource(
         "ens://categories/{code}",
@@ -598,15 +626,10 @@ def build_server(
         )
 
     @server.tool(annotations=_READ_ONLY, structured_output=True)
-    async def get_measure(code: str) -> dict[str, Any] | None:
+    async def get_measure(code: str) -> dict[str, Any]:
         """Obtiene una medida de seguridad por su código exacto, p. ej. "org.1"."""
         _, measures = await repository.fetch_corpus()
-        # _normalize() makes the lookup case-insensitive at the boundary, like
-        # list_measures's category_code: a code pasted in upper case ("ORG.1")
-        # resolves to the same measure instead of silently returning None. An
-        # empty/whitespace code has no match (no measure has an empty code).
-        measure = find_measure_by_code(measures, _normalize(code))
-        return _measure_to_dict(measure) if measure is not None else None
+        return _measure_to_dict(_require_measure(measures, code))
 
     @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def search_measures(

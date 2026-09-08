@@ -73,6 +73,10 @@ Además del Anexo II, incorpora el cuestionario de verificación de la **guía C
 | `refresh_live_page` | — | Comprueba ahora el sitio oficial y actualiza los datos si han cambiado. |
 | `snapshot_status` | — | Origen y frescura de los datos que se están sirviendo. |
 
+Los contratos públicos de entrada y salida están versionados en
+`ens://schemas/v1/tools`; cada tool también expone su schema individual en
+`ens://schemas/v1/tools/{name}`.
+
 ## Qué devuelve una medida
 
 Cada medida trae dos textos, y hacen falta los dos: `norm_text` es la redacción del RD 311/2022 (lo que la medida **exige**) y `description` es el cuestionario de la CCN-STIC 808 (lo que el auditor **pregunta**). Los refuerzos vienen emparejados con el nivel que los exige y con su redacción en el RD:
