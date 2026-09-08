@@ -34,6 +34,7 @@ def test_repository_packs_are_versioned_sourced_and_reference_known_measures() -
 
 
 def test_configured_loader_accepts_direct_files_and_directories(
+    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv(DATA_PACKS_ENV_VAR, raising=False)
@@ -50,6 +51,11 @@ def test_configured_loader_accepts_direct_files_and_directories(
         os.pathsep.join((str(_PACKS / "iso27001.json"), str(_PACKS / "iso27001.json"))),
     )
     with pytest.raises(ValueError, match="pack_id configurados"):
+        load_configured_data_packs()
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv(DATA_PACKS_ENV_VAR, f"{_PACKS}{os.pathsep}")
+    with pytest.raises(ValueError, match="rutas vacías"):
         load_configured_data_packs()
 
 

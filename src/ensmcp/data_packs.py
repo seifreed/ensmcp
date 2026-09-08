@@ -34,8 +34,11 @@ def load_configured_data_packs() -> tuple[DataPack, ...]:
     configured = os.environ.get(DATA_PACKS_ENV_VAR, "").strip()
     if not configured:
         return ()
+    items = configured.split(os.pathsep)
+    if any(not item.strip() for item in items):
+        raise ValueError(f"{DATA_PACKS_ENV_VAR} contiene rutas vacías")
     paths = []
-    for item in configured.split(os.pathsep):
+    for item in items:
         path = Path(item).expanduser()
         paths.extend(sorted(path.glob("*.json"))) if path.is_dir() else paths.append(path)
     packs = tuple(load_data_pack(path) for path in paths)
