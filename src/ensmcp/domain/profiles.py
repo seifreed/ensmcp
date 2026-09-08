@@ -180,13 +180,12 @@ def resolve_compliance_profile(
         )
         own_additional = frozenset(profile.additional_measures)
         own_excluded = frozenset(profile.excluded_measures)
-        result = ResolvedComplianceProfile(
+        return ResolvedComplianceProfile(
             chain=(*parent.chain, profile.profile_id),
             overrides=_merge_dimensions(parent.overrides, profile.profile_overrides),
             additional_measures=(parent.additional_measures | own_additional) - own_excluded,
             excluded_measures=(parent.excluded_measures | own_excluded) - own_additional,
         )
-        return result
 
     return visit(active_profile_id, ())
 
