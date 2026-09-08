@@ -103,10 +103,6 @@ def _parse_options(argv: Sequence[str] | None = None) -> CLIOptions:
     )
 
 
-def _parse_mode(argv: Sequence[str] | None = None) -> ServerMode:
-    return _parse_options(argv).mode
-
-
 def _http_settings(options: CLIOptions) -> HTTPSettings | None:
     if options.transport is ServerTransport.STDIO:
         return None

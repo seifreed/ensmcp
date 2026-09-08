@@ -32,7 +32,6 @@ from ensmcp.__main__ import (
     ServerMode,
     ServerTransport,
     _http_settings,
-    _parse_mode,
     _parse_options,
     build_wiring,
     main,
@@ -214,12 +213,12 @@ def test_cli_modes_are_explicit_and_offline_by_default(monkeypatch: pytest.Monke
     monkeypatch.delenv(MODE_ENV_VAR, raising=False)
     monkeypatch.delenv("ENSMCP_LIVE_CHECK", raising=False)
 
-    check(_parse_mode([]) is ServerMode.OFFLINE)
-    check(_parse_mode(["--check-updates"]) is ServerMode.CHECK_UPDATES)
-    check(_parse_mode(["--live"]) is ServerMode.LIVE)
+    check(_parse_options([]).mode is ServerMode.OFFLINE)
+    check(_parse_options(["--check-updates"]).mode is ServerMode.CHECK_UPDATES)
+    check(_parse_options(["--live"]).mode is ServerMode.LIVE)
     monkeypatch.setenv(MODE_ENV_VAR, "unknown")
     with pytest.raises(SystemExit, match="ENSMCP_MODE debe ser uno de"):
-        _parse_mode([])
+        _parse_options([])
 
 
 def test_cli_selects_and_validates_http_transport(monkeypatch: pytest.MonkeyPatch) -> None:
