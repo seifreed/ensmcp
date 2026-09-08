@@ -7,14 +7,44 @@ after itself when the launch fails partway through.
 
 from __future__ import annotations
 
+import asyncio
 import shutil
 from pathlib import Path
 
 import pytest
 from patchright.async_api import Error as PlaywrightError
 
+from ensmcp.scraping import persistent_context as persistent_context_module
 from ensmcp.scraping.persistent_context import PersistentBrowserContext
 from tests.support import check, leftover_profiles, require
+
+
+async def test_cancelling_playwright_start_stops_the_partial_driver(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    started = asyncio.Event()
+
+    class StartingPlaywright:
+        stopped = False
+
+        async def start(self) -> None:
+            started.set()
+            await asyncio.Future()
+
+        async def __aexit__(self) -> None:
+            self.stopped = True
+
+    manager = StartingPlaywright()
+    monkeypatch.setattr(persistent_context_module, "async_playwright", lambda: manager)
+    browser = PersistentBrowserContext(headless=True, channel=None)
+    opening = asyncio.create_task(browser.open())
+    await started.wait()
+
+    opening.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await opening
+
+    check(manager.stopped, "cancelar start() dejó vivo el driver parcial")
 
 
 async def test_open_cleans_up_after_a_failed_launch() -> None:

@@ -35,8 +35,9 @@ class PersistentBrowserContext:
 
     async def open(self) -> Page:
         """Launch the browser in a fresh temp profile and return its one page."""
+        manager = async_playwright()
         try:
-            self._playwright = await async_playwright().start()
+            self._playwright = await manager.start()
             self._user_data_dir = tempfile.mkdtemp(prefix="ensmcp-")
             self._context = await self._playwright.chromium.launch_persistent_context(
                 self._user_data_dir,
@@ -61,6 +62,8 @@ class PersistentBrowserContext:
             # assigned — the driver process, the temp profile dir — since
             # nothing else owns them yet. close() tolerates any subset of
             # these being None, so it's safe to call unconditionally here.
+            if self._playwright is None:
+                await manager.__aexit__()
             await self.close()
             raise
 
