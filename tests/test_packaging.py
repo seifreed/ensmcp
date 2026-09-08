@@ -101,6 +101,14 @@ def test_both_corpora_live_inside_the_package_so_any_build_ships_them() -> None:
     check(shipped == {"anexo_ii.json", "guia_808.json"}, f"datos empaquetados: {sorted(shipped)}")
 
 
+def test_release_requires_a_github_verified_annotated_tag() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+
+    check("must be an annotated signed tag" in workflow)
+    check(".verification.verified" in workflow)
+    check("GitHub could not verify the signature" in workflow)
+
+
 # El probe viaja como argv de `-c`, y en la locale C de Linux CPython aborta en
 # el arranque si no puede decodificar el propio argv ("Unable to decode the
 # command from the command line"): un solo carácter no-ASCII aquí y el test
