@@ -108,3 +108,14 @@ def test_compliance_profile_rejects_duplicates_unknown_parents_and_cycles() -> N
             (ComplianceProfile("a", inherits="b"), ComplianceProfile("b", inherits="a")),
             "a",
         )
+    with pytest.raises(ValueError, match="añadir y excluir"):
+        resolve_compliance_profile(
+            (
+                ComplianceProfile(
+                    "contradictory",
+                    additional_measures=("org.1",),
+                    excluded_measures=("org.1",),
+                ),
+            ),
+            "contradictory",
+        )

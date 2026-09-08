@@ -180,6 +180,12 @@ def resolve_compliance_profile(
         )
         own_additional = frozenset(profile.additional_measures)
         own_excluded = frozenset(profile.excluded_measures)
+        conflicting = own_additional & own_excluded
+        if conflicting:
+            raise ValueError(
+                f"el perfil {profile.profile_id!r} no puede añadir y excluir las mismas medidas: "
+                f"{sorted(conflicting, key=code_order)}"
+            )
         return ResolvedComplianceProfile(
             chain=(*parent.chain, profile.profile_id),
             overrides=_merge_dimensions(parent.overrides, profile.profile_overrides),
