@@ -17,6 +17,9 @@ jobs:
   build:
     name: Build distribution
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,6 +50,17 @@ jobs:
           gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_sha}" \
             --jq '.verification.verified' | grep -qx true || {
               echo "GitHub could not verify the signature of ${GITHUB_REF_NAME}" >&2
+              exit 1
+            }
+      - name: Require successful CI for the tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head_sha="$(git rev-parse HEAD)"
+          gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${head_sha}&status=completed&per_page=100" \
+            --jq '.workflow_runs | any(.conclusion == "success")' | grep -qx true || {
+              echo "Commit ${head_sha} has no successful completed CI run" >&2
               exit 1
             }
       - run: pip install build

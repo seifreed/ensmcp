@@ -110,6 +110,15 @@ def test_release_requires_a_github_verified_annotated_tag() -> None:
     check("GitHub could not verify the signature" in workflow)
 
 
+def test_release_requires_successful_ci_for_the_tagged_commit() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+
+    check("actions: read" in workflow)
+    check('head_sha="$(git rev-parse HEAD)"' in workflow)
+    check("actions/workflows/ci.yml/runs?head_sha=${head_sha}" in workflow)
+    check('.conclusion == "success"' in workflow)
+
+
 def test_release_attaches_data_packs_but_does_not_publish_them_to_pypi() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
 
