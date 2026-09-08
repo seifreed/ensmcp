@@ -20,14 +20,13 @@ from mcp.types import ToolAnnotations
 
 from ensmcp.domain.crosswalk import DataPack, DataPackStatus
 from ensmcp.domain.dda import (
-    DDAMeasure,
     DDAMeasureUpdate,
     DDARecord,
-    DDAReinforcement,
     DDAStore,
     ExportedDocument,
     ExportFormat,
     ImplementationStatus,
+    create_dda_record,
     dda_summary,
     dda_to_dict,
     update_dda_measure,
@@ -46,11 +45,15 @@ from ensmcp.domain.models import (
     SystemCategory,
 )
 from ensmcp.domain.profiles import (
+    ApplicabilityReason,
     EffectiveDimension,
+    MeasureApplicability,
     ResolvedComplianceProfile,
     SystemProfile,
-    effective_dimensions,
+    evaluate_profile_scope,
+    explain_profile_measure,
     resolve_compliance_profile,
+    resolve_profile_scope,
 )
 from ensmcp.domain.queries import (
     applicable_measures,
@@ -59,7 +62,6 @@ from ensmcp.domain.queries import (
     find_measure_by_code,
     fold,
     required_audit_requirements,
-    required_level,
     required_maturity_level,
     search_measures_by_text,
     system_category,
@@ -469,44 +471,6 @@ def _profile_controls(
     )
 
 
-def _profile_scope(
-    profile: SystemProfile,
-    measures: Sequence[SecurityMeasure],
-    subsystem_id: str | None = None,
-) -> tuple[
-    str,
-    str,
-    dict[SecurityDimension, EffectiveDimension],
-    ResolvedComplianceProfile,
-]:
-    controls = _profile_controls(profile, measures)
-    base = effective_dimensions(
-        profile.dimensions,
-        source=f"system:{profile.profile_id}",
-        information_assets=profile.information_assets,
-        services=profile.services,
-        overrides=controls.overrides,
-    )
-    if subsystem_id is None:
-        return profile.profile_id, profile.scope, base, controls
-
-    by_id = {subsystem.subsystem_id: subsystem for subsystem in profile.subsystems}
-    if len(by_id) != len(profile.subsystems):
-        raise ValueError("los subsystem_id deben ser únicos")
-    subsystem = by_id.get(subsystem_id)
-    if subsystem is None:
-        raise ValueError(f"subsistema desconocido: {subsystem_id!r}")
-    resolved = effective_dimensions(
-        subsystem.dimensions,
-        source=f"subsystem:{subsystem.subsystem_id}",
-        information_assets=subsystem.information_assets,
-        services=subsystem.services,
-        inherited=base if subsystem.inheritance else None,
-        overrides=controls.overrides,
-    )
-    return subsystem.subsystem_id, subsystem.scope, resolved, controls
-
-
 def _effective_dimensions_to_dict(
     dimensions: Mapping[SecurityDimension, EffectiveDimension],
 ) -> dict[str, Any]:
@@ -527,150 +491,61 @@ def _effective_dimensions_to_dict(
     }
 
 
+def _applicability_reason_to_dict(reason: ApplicabilityReason) -> dict[str, Any]:
+    return {
+        "basis": reason.basis,
+        "dimensions": [dimension.value for dimension in reason.dimensions],
+        "system_level": reason.system_level.value if reason.system_level is not None else None,
+        "table_cell": reason.table_cell,
+        "profile_chain": list(reason.profile_chain),
+        "evidence": [
+            {
+                "dimension": item.dimension.value,
+                "source": item.source,
+                "level": item.level.value,
+                "justification": item.justification,
+            }
+            for item in reason.evidence
+        ],
+    }
+
+
 def _profile_scope_to_dict(
     profile: SystemProfile,
     measures: Sequence[SecurityMeasure],
     subsystem_id: str | None = None,
 ) -> dict[str, Any]:
-    scope_id, scope, dimensions, controls = _profile_scope(profile, measures, subsystem_id)
-    levels = {dimension: value.level for dimension, value in dimensions.items()}
-    calculated = {item.measure.code for item in applicable_measures(measures, levels)}
-    applicable = sorted(
-        (calculated | controls.additional_measures) - controls.excluded_measures,
-        key=code_order,
+    scope = resolve_profile_scope(
+        profile,
+        _profile_controls(profile, measures),
+        subsystem_id,
     )
+    evaluated = evaluate_profile_scope(scope, measures)
     return {
-        "scope_id": scope_id,
-        "scope": scope,
-        "categoria_sistema": system_category(levels).value,
-        "dimensions": _effective_dimensions_to_dict(dimensions),
-        "compliance_profile_chain": list(controls.chain),
-        "applicable_measure_codes": applicable,
+        "scope_id": evaluated.scope_id,
+        "scope": evaluated.scope,
+        "categoria_sistema": evaluated.category.value,
+        "dimensions": _effective_dimensions_to_dict(evaluated.dimensions),
+        "compliance_profile_chain": list(evaluated.compliance_profile_chain),
+        "applicable_measure_codes": list(evaluated.applicable_measure_codes),
     }
 
 
-def _explain_profile_measure(
-    measure: SecurityMeasure,
-    dimensions: Mapping[SecurityDimension, EffectiveDimension],
-    controls: ResolvedComplianceProfile,
-    *,
-    scope_id: str,
-) -> dict[str, Any]:
-    levels = {dimension: value.level for dimension, value in dimensions.items()}
-    level = required_level(measure, levels)
-    matched_dimensions = [
-        dimension
-        for dimension in _DIMENSION_SORT_ORDER
-        if level is not None and dimension in measure.dimensions and levels.get(dimension) is level
-    ]
-    table_cell = (
-        measure.raw_levels[_LEVEL_SORT_ORDER.index(level)]
-        if level is not None and len(measure.raw_levels) == len(_LEVEL_SORT_ORDER)
-        else None
-    )
-    if measure.code in controls.excluded_measures:
-        applicable = False
-        basis = "profile_exclusion"
-    elif measure.code in controls.additional_measures:
-        applicable = True
-        basis = "profile_addition"
-    elif level is None:
-        applicable = False
-        basis = "unvalued_dimension"
-    else:
-        applicable = level in measure.levels
-        basis = "category" if measure.dimensions == frozenset(SecurityDimension) else "dimension"
-
+def _profile_measure_to_dict(explanation: MeasureApplicability) -> dict[str, Any]:
     return {
-        "scope_id": scope_id,
-        "measure_code": measure.code,
-        "applicable": applicable,
-        "reason": {
-            "basis": basis,
-            "dimensions": [dimension.value for dimension in matched_dimensions],
-            "system_level": level.value if level is not None else None,
-            "table_cell": table_cell,
-            "profile_chain": list(controls.chain),
-            "evidence": [
-                {
-                    "dimension": dimension.value,
-                    "source": item.source,
-                    "level": item.level.value,
-                    "justification": item.justification,
-                }
-                for dimension in matched_dimensions
-                for item in dimensions[dimension].evidence
-            ],
-        },
+        "scope_id": explanation.scope_id,
+        "measure_code": explanation.measure_code,
+        "applicable": explanation.applicable,
+        "reason": _applicability_reason_to_dict(explanation.reason),
         "required_reinforcements": [
             {
                 "code": reinforcement.code,
                 "alternative": reinforcement.alternative,
                 "text": reinforcement.text,
             }
-            for reinforcement in sorted(
-                measure.reinforcements,
-                key=lambda item: (code_order(item.code), item.alternative, item.text),
-            )
-            if level is not None and reinforcement.level is level
+            for reinforcement in explanation.required_reinforcements
         ],
     }
-
-
-def _new_dda_record(
-    record_id: str,
-    profile: SystemProfile,
-    measures: Sequence[SecurityMeasure],
-    subsystem_id: str | None,
-    now: datetime,
-) -> DDARecord:
-    scope_id, scope, dimensions, controls = _profile_scope(profile, measures, subsystem_id)
-    levels = {dimension: value.level for dimension, value in dimensions.items()}
-    lines = []
-    for measure in measures:
-        explanation = _explain_profile_measure(measure, dimensions, controls, scope_id=scope_id)
-        applicable = bool(explanation["applicable"])
-        required = required_level(measure, levels)
-        lines.append(
-            DDAMeasure(
-                measure_code=measure.code,
-                title=measure.title,
-                applicable=applicable,
-                required_level=required,
-                required_reinforcements=tuple(
-                    DDAReinforcement(
-                        reinforcement.code,
-                        reinforcement.alternative,
-                        reinforcement.text,
-                    )
-                    for reinforcement in sorted(
-                        measure.reinforcements,
-                        key=lambda item: (code_order(item.code), item.alternative, item.text),
-                    )
-                    if required is not None and reinforcement.level is required
-                ),
-                decision_basis=explanation["reason"],
-                implementation_status=(
-                    ImplementationStatus.NOT_ASSESSED
-                    if applicable
-                    else ImplementationStatus.EXCLUDED
-                ),
-                exclusion_reason=(
-                    "" if applicable else f"No aplicable: {explanation['reason']['basis']}"
-                ),
-            )
-        )
-    return DDARecord(
-        record_id=record_id,
-        profile_id=profile.profile_id,
-        system=profile.system,
-        scope_id=scope_id,
-        scope=scope,
-        category=system_category(levels),
-        created_at=now,
-        updated_at=now,
-        measures=tuple(lines),
-    )
 
 
 def _parse_optional_enum[E: Enum](enum_type: type[E], raw: str | None, argument: str) -> E | None:
@@ -1024,8 +899,12 @@ def build_server(
         """Explica por qué una medida aplica, no aplica o fue forzada por un perfil."""
         _, measures = await repository.fetch_corpus()
         measure = _require_measure(measures, code)
-        scope_id, _, dimensions, controls = _profile_scope(profile, measures, subsystem_id)
-        return _explain_profile_measure(measure, dimensions, controls, scope_id=scope_id)
+        scope = resolve_profile_scope(
+            profile,
+            _profile_controls(profile, measures),
+            subsystem_id,
+        )
+        return _profile_measure_to_dict(explain_profile_measure(measure, scope))
 
     @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def alcance_auditoria(
@@ -1218,7 +1097,14 @@ def build_server(
         ) -> dict[str, object]:
             """Crea y persiste una DdA completa para un sistema o subsistema."""
             _, measures = await repository.fetch_corpus()
-            record = _new_dda_record(record_id, profile, measures, subsystem_id, clock())
+            record = create_dda_record(
+                record_id,
+                profile,
+                measures,
+                controls=_profile_controls(profile, measures),
+                subsystem_id=subsystem_id,
+                now=clock(),
+            )
             dda_store.create(record)
             return dict(dda_summary(record))
 

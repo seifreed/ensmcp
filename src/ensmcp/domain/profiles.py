@@ -5,10 +5,18 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 
-from ensmcp.domain.models import DimensionLevel, SecurityDimension
+from ensmcp.domain.models import (
+    DimensionLevel,
+    Reinforcement,
+    SecurityDimension,
+    SecurityMeasure,
+    SystemCategory,
+)
+from ensmcp.domain.queries import applicable_measures, code_order, required_level, system_category
 
 _DIMENSION_FIELDS = tuple((dimension, dimension.value) for dimension in SecurityDimension)
 _LEVEL_RANK = {level: rank for rank, level in enumerate(DimensionLevel)}
+_LEVELS = tuple(DimensionLevel)
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,6 +93,52 @@ class ResolvedComplianceProfile:
     overrides: DimensionProfile = field(default_factory=DimensionProfile)
     additional_measures: frozenset[str] = frozenset()
     excluded_measures: frozenset[str] = frozenset()
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvedProfileScope:
+    scope_id: str
+    scope: str
+    dimensions: Mapping[SecurityDimension, EffectiveDimension]
+    controls: ResolvedComplianceProfile
+
+
+@dataclass(frozen=True, slots=True)
+class ProfileScopeEvaluation:
+    scope_id: str
+    scope: str
+    category: SystemCategory
+    dimensions: Mapping[SecurityDimension, EffectiveDimension]
+    compliance_profile_chain: tuple[str, ...]
+    applicable_measure_codes: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicabilityEvidence:
+    dimension: SecurityDimension
+    source: str
+    level: DimensionLevel
+    justification: str
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicabilityReason:
+    basis: str
+    dimensions: tuple[SecurityDimension, ...]
+    system_level: DimensionLevel | None
+    table_cell: str | None
+    profile_chain: tuple[str, ...]
+    evidence: tuple[ApplicabilityEvidence, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class MeasureApplicability:
+    scope_id: str
+    measure_code: str
+    applicable: bool
+    required_level: DimensionLevel | None
+    reason: ApplicabilityReason
+    required_reinforcements: tuple[Reinforcement, ...]
 
 
 def dimension_items(
@@ -177,3 +231,116 @@ def effective_dimensions(
         )
         for dimension, items in evidence.items()
     }
+
+
+def resolve_profile_scope(
+    profile: SystemProfile,
+    controls: ResolvedComplianceProfile,
+    subsystem_id: str | None = None,
+) -> ResolvedProfileScope:
+    base = effective_dimensions(
+        profile.dimensions,
+        source=f"system:{profile.profile_id}",
+        information_assets=profile.information_assets,
+        services=profile.services,
+        overrides=controls.overrides,
+    )
+    if subsystem_id is None:
+        return ResolvedProfileScope(profile.profile_id, profile.scope, base, controls)
+
+    by_id = {subsystem.subsystem_id: subsystem for subsystem in profile.subsystems}
+    if len(by_id) != len(profile.subsystems):
+        raise ValueError("los subsystem_id deben ser únicos")
+    subsystem = by_id.get(subsystem_id)
+    if subsystem is None:
+        raise ValueError(f"subsistema desconocido: {subsystem_id!r}")
+    dimensions = effective_dimensions(
+        subsystem.dimensions,
+        source=f"subsystem:{subsystem.subsystem_id}",
+        information_assets=subsystem.information_assets,
+        services=subsystem.services,
+        inherited=base if subsystem.inheritance else None,
+        overrides=controls.overrides,
+    )
+    return ResolvedProfileScope(subsystem.subsystem_id, subsystem.scope, dimensions, controls)
+
+
+def evaluate_profile_scope(
+    scope: ResolvedProfileScope, measures: Sequence[SecurityMeasure]
+) -> ProfileScopeEvaluation:
+    levels = {dimension: value.level for dimension, value in scope.dimensions.items()}
+    calculated = {item.measure.code for item in applicable_measures(measures, levels)}
+    applicable = tuple(
+        sorted(
+            (calculated | scope.controls.additional_measures) - scope.controls.excluded_measures,
+            key=code_order,
+        )
+    )
+    return ProfileScopeEvaluation(
+        scope.scope_id,
+        scope.scope,
+        system_category(levels),
+        scope.dimensions,
+        scope.controls.chain,
+        applicable,
+    )
+
+
+def explain_profile_measure(
+    measure: SecurityMeasure, scope: ResolvedProfileScope
+) -> MeasureApplicability:
+    levels = {dimension: value.level for dimension, value in scope.dimensions.items()}
+    level = required_level(measure, levels)
+    matched_dimensions = tuple(
+        dimension
+        for dimension in SecurityDimension
+        if level is not None and dimension in measure.dimensions and levels.get(dimension) is level
+    )
+    table_cell = (
+        measure.raw_levels[_LEVELS.index(level)]
+        if level is not None and len(measure.raw_levels) == len(_LEVELS)
+        else None
+    )
+    if measure.code in scope.controls.excluded_measures:
+        applicable, basis = False, "profile_exclusion"
+    elif measure.code in scope.controls.additional_measures:
+        applicable, basis = True, "profile_addition"
+    elif level is None:
+        applicable, basis = False, "unvalued_dimension"
+    else:
+        applicable = level in measure.levels
+        basis = "category" if measure.dimensions == frozenset(SecurityDimension) else "dimension"
+
+    reason = ApplicabilityReason(
+        basis,
+        matched_dimensions,
+        level,
+        table_cell,
+        scope.controls.chain,
+        tuple(
+            ApplicabilityEvidence(
+                dimension,
+                item.source,
+                item.level,
+                item.justification,
+            )
+            for dimension in matched_dimensions
+            for item in scope.dimensions[dimension].evidence
+        ),
+    )
+    reinforcements = tuple(
+        reinforcement
+        for reinforcement in sorted(
+            measure.reinforcements,
+            key=lambda item: (code_order(item.code), item.alternative, item.text),
+        )
+        if level is not None and reinforcement.level is level
+    )
+    return MeasureApplicability(
+        scope.scope_id,
+        measure.code,
+        applicable,
+        level,
+        reason,
+        reinforcements,
+    )

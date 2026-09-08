@@ -2,13 +2,21 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 from enum import StrEnum
 from typing import Protocol
 
-from ensmcp.domain.models import DimensionLevel, SystemCategory
+from ensmcp.domain.models import DimensionLevel, SecurityMeasure, SystemCategory
+from ensmcp.domain.profiles import (
+    ApplicabilityReason,
+    ResolvedComplianceProfile,
+    SystemProfile,
+    explain_profile_measure,
+    resolve_profile_scope,
+)
+from ensmcp.domain.queries import system_category
 
 DDA_SCHEMA_VERSION = 1
 
@@ -99,6 +107,73 @@ class DDAStore(Protocol):
     def load(self, record_id: str) -> DDARecord: ...
 
     def list_ids(self) -> tuple[str, ...]: ...
+
+
+def _decision_basis(reason: ApplicabilityReason) -> dict[str, object]:
+    return {
+        "basis": reason.basis,
+        "dimensions": [dimension.value for dimension in reason.dimensions],
+        "system_level": reason.system_level.value if reason.system_level is not None else None,
+        "table_cell": reason.table_cell,
+        "profile_chain": list(reason.profile_chain),
+        "evidence": [
+            {
+                "dimension": item.dimension.value,
+                "source": item.source,
+                "level": item.level.value,
+                "justification": item.justification,
+            }
+            for item in reason.evidence
+        ],
+    }
+
+
+def create_dda_record(
+    record_id: str,
+    profile: SystemProfile,
+    measures: Sequence[SecurityMeasure],
+    *,
+    controls: ResolvedComplianceProfile,
+    subsystem_id: str | None,
+    now: datetime,
+) -> DDARecord:
+    scope = resolve_profile_scope(profile, controls, subsystem_id)
+    levels = {dimension: value.level for dimension, value in scope.dimensions.items()}
+    lines = []
+    for measure in measures:
+        explanation = explain_profile_measure(measure, scope)
+        lines.append(
+            DDAMeasure(
+                measure_code=measure.code,
+                title=measure.title,
+                applicable=explanation.applicable,
+                required_level=explanation.required_level,
+                required_reinforcements=tuple(
+                    DDAReinforcement(item.code, item.alternative, item.text)
+                    for item in explanation.required_reinforcements
+                ),
+                decision_basis=_decision_basis(explanation.reason),
+                implementation_status=(
+                    ImplementationStatus.NOT_ASSESSED
+                    if explanation.applicable
+                    else ImplementationStatus.EXCLUDED
+                ),
+                exclusion_reason=(
+                    "" if explanation.applicable else f"No aplicable: {explanation.reason.basis}"
+                ),
+            )
+        )
+    return DDARecord(
+        record_id=record_id,
+        profile_id=profile.profile_id,
+        system=profile.system,
+        scope_id=scope.scope_id,
+        scope=scope.scope,
+        category=system_category(levels),
+        created_at=now,
+        updated_at=now,
+        measures=tuple(lines),
+    )
 
 
 def update_dda_measure(
