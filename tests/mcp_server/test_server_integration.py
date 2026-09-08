@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import json
 import re
+from base64 import b64decode
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -12,6 +15,8 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ResourceError, ToolError
 from mcp.types import CallToolResult
 
+from ensmcp.dda_export import export_dda
+from ensmcp.dda_store import FileDDAStore
 from ensmcp.guia.loader import load_packaged_guide
 from ensmcp.mcp_server.server import build_server
 from ensmcp.scraping.live_session import LiveSession
@@ -529,14 +534,109 @@ async def test_list_measures_tool_surfaces_scraping_failures_as_tool_errors() ->
 
 
 @pytest.fixture
-async def snapshot_server() -> MCPServer:
+async def snapshot_server(tmp_path: Path) -> MCPServer:
     """A server over the real shipped corpus, which is what a DdA needs.
 
     The fixture site's five rows cannot answer "what does this system owe":
     that question is about the whole Anexo II, its n.a. cells and its
     reinforcement notes. No browser and no network — the snapshot is a file.
     """
-    return build_server(SnapshotRepository.from_package_data(), guia=load_packaged_guide())
+    return build_server(
+        SnapshotRepository.from_package_data(),
+        guia=load_packaged_guide(),
+        dda_store=FileDDAStore(tmp_path / "dda"),
+        export_handler=export_dda,
+        clock=lambda: datetime(2026, 9, 8, tzinfo=UTC),
+    )
+
+
+async def test_persistent_dda_workflow(snapshot_server: MCPServer) -> None:
+    created = await _call_result(
+        snapshot_server,
+        "create_dda",
+        {"record_id": "portal-2026", "profile": _system_profile()},
+    )
+    summary = created.structured_content or {}
+    check(summary["record_id"] == "portal-2026")
+    check(summary["measures"] == 73)
+
+    listed = await _call_result(snapshot_server, "list_dda", {})
+    check((listed.structured_content or {})["result"][0]["record_id"] == "portal-2026")
+
+    record = await _call_result(snapshot_server, "get_dda", {"record_id": "portal-2026"})
+    payload = record.structured_content or {}
+    check(payload["category"] == "alta")
+    check(payload["measures"][0]["decision_basis"]["basis"] == "profile_exclusion")
+
+    updated = await _call_result(
+        snapshot_server,
+        "update_dda_measure_status",
+        {
+            "record_id": "portal-2026",
+            "code": "ORG.1",
+            "implementation_status": "compensated",
+            "justification": "Riesgo aceptado",
+            "owner": "CISO",
+            "evidence_references": ["ev-42"],
+            "compensatory_measures": ["segmentación"],
+            "surveillance_measures": ["revisión mensual"],
+            "target_date": "2026-10-01",
+            "review_date": "2027-01-01",
+        },
+    )
+    updated_measure = (updated.structured_content or {})["measures"][0]
+    check(updated_measure["implementation_status"] == "compensated")
+    check(updated_measure["owner"] == "CISO")
+
+    document = await _call_result(
+        snapshot_server,
+        "export_dda",
+        {"record_id": "portal-2026", "output_format": "json"},
+    )
+    exported = document.structured_content or {}
+    check(exported["encoding"] == "base64")
+    check(json.loads(b64decode(exported["content"]))["record_id"] == "portal-2026")
+
+    with pytest.raises(ToolError, match="ya existe"):
+        await snapshot_server.call_tool(
+            "create_dda", {"record_id": "portal-2026", "profile": _system_profile()}
+        )
+    with pytest.raises(ToolError, match="exclusion_reason"):
+        await snapshot_server.call_tool(
+            "update_dda_measure_status",
+            {
+                "record_id": "portal-2026",
+                "code": "org.1",
+                "implementation_status": "excluded",
+            },
+        )
+    with pytest.raises(ToolError, match="compensatory_measures"):
+        await snapshot_server.call_tool(
+            "update_dda_measure_status",
+            {
+                "record_id": "portal-2026",
+                "code": "org.1",
+                "implementation_status": "compensated",
+            },
+        )
+    with pytest.raises(ToolError, match="no contiene"):
+        await snapshot_server.call_tool(
+            "update_dda_measure_status",
+            {
+                "record_id": "portal-2026",
+                "code": "missing",
+                "implementation_status": "implemented",
+            },
+        )
+    with pytest.raises(ToolError, match="desconocida"):
+        await snapshot_server.call_tool("get_dda", {"record_id": "missing"})
+
+
+async def test_dda_store_can_be_wired_without_an_exporter(tmp_path: Path) -> None:
+    server = build_server(SnapshotRepository.from_package_data(), dda_store=FileDDAStore(tmp_path))
+    names = {tool.name for tool in await server.list_tools()}
+    check("create_dda" in names)
+    check("export_dda" not in names)
 
 
 async def test_server_exposes_typed_resources_and_tool_annotations(
@@ -589,6 +689,9 @@ async def test_server_exposes_typed_resources_and_tool_annotations(
         await snapshot_server.read_resource("ens://schemas/v1/tools/unknown")
     search_annotations = require(tools["search_measures"].annotations)
     check(search_annotations.read_only_hint is True)
+    create_annotations = require(tools["create_dda"].annotations)
+    check(create_annotations.read_only_hint is False)
+    check(create_annotations.destructive_hint is False)
 
     async def refresh() -> None:
         return None

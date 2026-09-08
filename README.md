@@ -63,6 +63,11 @@ Además del Anexo II, incorpora el cuestionario de verificación de la **guía C
 | `declaracion_aplicabilidad` | `confidencialidad?`, `integridad?`, `disponibilidad?`, `autenticidad?`, `trazabilidad?` | La matriz normativa base para preparar la DdA: se valora cada dimensión (`bajo`/`medio`/`alto`, u omitida) y devuelve las medidas exigibles con sus refuerzos. |
 | `evaluate_system_profile` | `profile` | Calcula máximos por activos y servicios, aplica perfiles heredados y evalúa subsistemas. |
 | `explain_applicability` | `code`, `profile`, `subsystem_id?` | Explica la dimensión, nivel, celda, justificación o regla de perfil que decide una medida. |
+| `create_dda` | `record_id`, `profile`, `subsystem_id?` | Crea una DdA persistente con las 73 medidas y su decisión de aplicabilidad. |
+| `list_dda` | — | Lista las DdA guardadas y resume sus estados de implantación. |
+| `get_dda` | `record_id` | Recupera una DdA completa. |
+| `update_dda_measure_status` | `record_id`, `code`, `implementation_status`, ... | Registra estado, responsable, evidencias, exclusión o compensación, vigilancia y fechas. |
+| `export_dda` | `record_id`, `output_format` | Exporta como `json`, `csv` o `markdown`; el contenido se devuelve en base64. |
 | `alcance_auditoria` | mismas que la DdA | El temario de auditoría del sistema: las medidas aplicables con sus preguntas de verificación acumuladas y el nivel de madurez mínimo exigible. |
 | `requisitos_auditoria` | `code?`, `level?` | El cuestionario CCN-STIC 808 en bruto, por medida o por tramo, marcando los requisitos esenciales. |
 | `requisitos_articulos` | — | Las comprobaciones de auditoría sobre el articulado del RD (DdA formal, categorización, INES...). |
@@ -120,6 +125,8 @@ El ENS no aplica un nivel al sistema entero: aplica **uno por dimensión**. Se v
 ```
 
 La regla sale del RD 311/2022: la categoría del sistema es el mayor de los niveles valorados (Anexo I, ap. 4), las medidas marcadas «Categoría» se exigen según la categoría del sistema, las que protegen dimensiones según el nivel de esas dimensiones, y una dimensión sin valorar deja fuera las medidas que solo la protegen.
+
+Las DdA persistentes se guardan como JSON versionado mediante escritura atómica. Por defecto viven en `~/.ensmcp/dda`; `ENSMCP_DATA_DIR=/ruta` cambia la raíz a `/ruta/dda`. Los estados admitidos son `not_assessed`, `implemented`, `partially_implemented`, `not_implemented`, `excluded` y `compensated`. Una exclusión exige motivo y una compensación exige al menos una medida compensatoria.
 
 ## Alcance de auditoría
 

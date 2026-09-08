@@ -294,6 +294,11 @@ async def test_module_entry_point_serves_the_expected_tools() -> None:
             "requisitos_articulos",
             "evidencias_auditoria",
             "snapshot_status",
+            "create_dda",
+            "list_dda",
+            "get_dda",
+            "update_dda_measure_status",
+            "export_dda",
         }
     )
 

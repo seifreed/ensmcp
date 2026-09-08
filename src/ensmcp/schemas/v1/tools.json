@@ -134,6 +134,315 @@
         "type": "object"
       }
     },
+    "create_dda": {
+      "inputSchema": {
+        "$defs": {
+          "ComplianceProfile": {
+            "properties": {
+              "profile_id": {
+                "title": "Profile Id",
+                "type": "string"
+              },
+              "inherits": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Inherits"
+              },
+              "profile_overrides": {
+                "$ref": "#/$defs/DimensionProfile"
+              },
+              "additional_measures": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Additional Measures",
+                "type": "array"
+              },
+              "excluded_measures": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Excluded Measures",
+                "type": "array"
+              }
+            },
+            "required": [
+              "profile_id"
+            ],
+            "title": "ComplianceProfile",
+            "type": "object"
+          },
+          "DimensionAssessment": {
+            "properties": {
+              "level": {
+                "$ref": "#/$defs/DimensionLevel"
+              },
+              "justification": {
+                "default": "",
+                "title": "Justification",
+                "type": "string"
+              }
+            },
+            "required": [
+              "level"
+            ],
+            "title": "DimensionAssessment",
+            "type": "object"
+          },
+          "DimensionLevel": {
+            "description": "Nivel de una dimensión de seguridad del sistema.",
+            "enum": [
+              "bajo",
+              "bajo",
+              "medio",
+              "alto"
+            ],
+            "title": "DimensionLevel",
+            "type": "string"
+          },
+          "DimensionProfile": {
+            "properties": {
+              "confidencialidad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "integridad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "disponibilidad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "autenticidad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "trazabilidad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              }
+            },
+            "title": "DimensionProfile",
+            "type": "object"
+          },
+          "ProfileComponent": {
+            "properties": {
+              "component_id": {
+                "title": "Component Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "dimensions": {
+                "$ref": "#/$defs/DimensionProfile"
+              }
+            },
+            "required": [
+              "component_id",
+              "name"
+            ],
+            "title": "ProfileComponent",
+            "type": "object"
+          },
+          "SubsystemProfile": {
+            "properties": {
+              "subsystem_id": {
+                "title": "Subsystem Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "scope": {
+                "default": "",
+                "title": "Scope",
+                "type": "string"
+              },
+              "inheritance": {
+                "default": true,
+                "title": "Inheritance",
+                "type": "boolean"
+              },
+              "dimensions": {
+                "$ref": "#/$defs/DimensionProfile"
+              },
+              "information_assets": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ProfileComponent"
+                },
+                "title": "Information Assets",
+                "type": "array"
+              },
+              "services": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ProfileComponent"
+                },
+                "title": "Services",
+                "type": "array"
+              }
+            },
+            "required": [
+              "subsystem_id",
+              "name"
+            ],
+            "title": "SubsystemProfile",
+            "type": "object"
+          },
+          "SystemProfile": {
+            "properties": {
+              "profile_id": {
+                "title": "Profile Id",
+                "type": "string"
+              },
+              "system": {
+                "title": "System",
+                "type": "string"
+              },
+              "scope": {
+                "title": "Scope",
+                "type": "string"
+              },
+              "dimensions": {
+                "$ref": "#/$defs/DimensionProfile"
+              },
+              "information_assets": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ProfileComponent"
+                },
+                "title": "Information Assets",
+                "type": "array"
+              },
+              "services": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ProfileComponent"
+                },
+                "title": "Services",
+                "type": "array"
+              },
+              "subsystems": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/SubsystemProfile"
+                },
+                "title": "Subsystems",
+                "type": "array"
+              },
+              "compliance_profiles": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ComplianceProfile"
+                },
+                "title": "Compliance Profiles",
+                "type": "array"
+              },
+              "active_compliance_profile": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Active Compliance Profile"
+              }
+            },
+            "required": [
+              "profile_id",
+              "system",
+              "scope"
+            ],
+            "title": "SystemProfile",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "record_id": {
+            "title": "Record Id",
+            "type": "string"
+          },
+          "profile": {
+            "$ref": "#/$defs/SystemProfile"
+          },
+          "subsystem_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subsystem Id"
+          }
+        },
+        "required": [
+          "record_id",
+          "profile"
+        ],
+        "title": "create_ddaArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "create_ddaDictOutput",
+        "type": "object"
+      }
+    },
     "declaracion_aplicabilidad": {
       "inputSchema": {
         "properties": {
@@ -894,6 +1203,63 @@
         "type": "object"
       }
     },
+    "export_dda": {
+      "inputSchema": {
+        "$defs": {
+          "ExportFormat": {
+            "enum": [
+              "json",
+              "csv",
+              "markdown"
+            ],
+            "title": "ExportFormat",
+            "type": "string"
+          }
+        },
+        "properties": {
+          "record_id": {
+            "title": "Record Id",
+            "type": "string"
+          },
+          "output_format": {
+            "$ref": "#/$defs/ExportFormat"
+          }
+        },
+        "required": [
+          "record_id",
+          "output_format"
+        ],
+        "title": "export_ddaArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "title": "export_ddaDictOutput",
+        "type": "object"
+      }
+    },
+    "get_dda": {
+      "inputSchema": {
+        "properties": {
+          "record_id": {
+            "title": "Record Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "record_id"
+        ],
+        "title": "get_ddaArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "get_ddaDictOutput",
+        "type": "object"
+      }
+    },
     "get_measure": {
       "inputSchema": {
         "properties": {
@@ -937,6 +1303,30 @@
           "result"
         ],
         "title": "list_categoriesOutput",
+        "type": "object"
+      }
+    },
+    "list_dda": {
+      "inputSchema": {
+        "properties": {},
+        "title": "list_ddaArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Result",
+            "type": "array"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "list_ddaOutput",
         "type": "object"
       }
     },
@@ -1250,6 +1640,135 @@
       "outputSchema": {
         "additionalProperties": true,
         "title": "snapshot_statusDictOutput",
+        "type": "object"
+      }
+    },
+    "update_dda_measure_status": {
+      "inputSchema": {
+        "$defs": {
+          "ImplementationStatus": {
+            "enum": [
+              "not_assessed",
+              "implemented",
+              "partially_implemented",
+              "not_implemented",
+              "excluded",
+              "compensated"
+            ],
+            "title": "ImplementationStatus",
+            "type": "string"
+          }
+        },
+        "properties": {
+          "record_id": {
+            "title": "Record Id",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "implementation_status": {
+            "$ref": "#/$defs/ImplementationStatus"
+          },
+          "justification": {
+            "default": "",
+            "title": "Justification",
+            "type": "string"
+          },
+          "owner": {
+            "default": "",
+            "title": "Owner",
+            "type": "string"
+          },
+          "evidence_references": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Evidence References"
+          },
+          "exclusion_reason": {
+            "default": "",
+            "title": "Exclusion Reason",
+            "type": "string"
+          },
+          "compensatory_measures": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Compensatory Measures"
+          },
+          "surveillance_measures": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Surveillance Measures"
+          },
+          "target_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target Date"
+          },
+          "review_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Review Date"
+          }
+        },
+        "required": [
+          "record_id",
+          "code",
+          "implementation_status"
+        ],
+        "title": "update_dda_measure_statusArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "update_dda_measure_statusDictOutput",
         "type": "object"
       }
     }

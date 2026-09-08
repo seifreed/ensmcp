@@ -8,6 +8,7 @@
 
 ## Unreleased
 
+- DdA persistentes con responsables, evidencias, excepciones, compensaciones, vigilancia y fechas; exportación JSON, CSV y Markdown.
 - Perfiles completos de sistema, subsistemas heredables y explicación de aplicabilidad.
 - Schemas MCP públicos versionados y errores homogéneos para medidas desconocidas.
 - Releases limitadas a tags anotados cuya firma valide GitHub.

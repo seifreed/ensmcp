@@ -15,6 +15,7 @@ requires-python = ">=3.12"
 # universal lock. `tests/test_packaging.py` keeps the manifest and lock aligned.
 dependencies = [
     "mcp>=2.0.0",
+    "pydantic>=2.13.5",
 ]
 
 [project.scripts]

@@ -8,7 +8,9 @@ scraping layer is only referenced through the MeasureRepository port.
 from __future__ import annotations
 
 import json
+from base64 import b64encode
 from collections.abc import Awaitable, Callable, Collection, Iterable, Mapping, Sequence
+from datetime import UTC, date, datetime
 from enum import Enum
 from importlib import resources
 from typing import Any
@@ -16,6 +18,19 @@ from typing import Any
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
+from ensmcp.domain.dda import (
+    DDAMeasure,
+    DDAMeasureUpdate,
+    DDARecord,
+    DDAReinforcement,
+    DDAStore,
+    ExportedDocument,
+    ExportFormat,
+    ImplementationStatus,
+    dda_summary,
+    dda_to_dict,
+    update_dda_measure,
+)
 from ensmcp.domain.models import (
     ApplicableMeasure,
     ArticleCheck,
@@ -55,9 +70,17 @@ RefreshHandler = Callable[[], Awaitable[None]]
 # server forwards it untouched, so nothing here has to know that a snapshot
 # exists — the same reason ``refresh`` is a callable and not a repository method.
 StatusHandler = Callable[[], dict[str, object]]
+ExportHandler = Callable[[DDARecord, ExportFormat], ExportedDocument]
+Clock = Callable[[], datetime]
 
 _READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False)
 _EXTERNAL_READ = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=True)
+_WRITE = ToolAnnotations(
+    read_only_hint=False,
+    destructive_hint=False,
+    idempotent_hint=False,
+    open_world_hint=False,
+)
 SCHEMA_VERSION = "1.0.0"
 
 # Bajo/Medio/Alto, in the order the ENS itself ranks them. Sorting the wire
@@ -574,6 +597,62 @@ def _explain_profile_measure(
     }
 
 
+def _new_dda_record(
+    record_id: str,
+    profile: SystemProfile,
+    measures: Sequence[SecurityMeasure],
+    subsystem_id: str | None,
+    now: datetime,
+) -> DDARecord:
+    scope_id, scope, dimensions, controls = _profile_scope(profile, measures, subsystem_id)
+    levels = {dimension: value.level for dimension, value in dimensions.items()}
+    lines = []
+    for measure in measures:
+        explanation = _explain_profile_measure(measure, dimensions, controls, scope_id=scope_id)
+        applicable = bool(explanation["applicable"])
+        required = required_level(measure, levels)
+        lines.append(
+            DDAMeasure(
+                measure_code=measure.code,
+                title=measure.title,
+                applicable=applicable,
+                required_level=required,
+                required_reinforcements=tuple(
+                    DDAReinforcement(
+                        reinforcement.code,
+                        reinforcement.alternative,
+                        reinforcement.text,
+                    )
+                    for reinforcement in sorted(
+                        measure.reinforcements,
+                        key=lambda item: (code_order(item.code), item.alternative, item.text),
+                    )
+                    if required is not None and reinforcement.level is required
+                ),
+                decision_basis=explanation["reason"],
+                implementation_status=(
+                    ImplementationStatus.NOT_ASSESSED
+                    if applicable
+                    else ImplementationStatus.EXCLUDED
+                ),
+                exclusion_reason=(
+                    "" if applicable else f"No aplicable: {explanation['reason']['basis']}"
+                ),
+            )
+        )
+    return DDARecord(
+        record_id=record_id,
+        profile_id=profile.profile_id,
+        system=profile.system,
+        scope_id=scope_id,
+        scope=scope,
+        category=system_category(levels),
+        created_at=now,
+        updated_at=now,
+        measures=tuple(lines),
+    )
+
+
 def _parse_optional_enum[E: Enum](enum_type: type[E], raw: str | None, argument: str) -> E | None:
     """Resolve one enum-valued tool argument, or say what would have worked.
 
@@ -629,6 +708,9 @@ def build_server(
     refresh: RefreshHandler | None = None,
     status: StatusHandler | None = None,
     guia: Guia808 | None = None,
+    dda_store: DDAStore | None = None,
+    export_handler: ExportHandler | None = None,
+    clock: Clock = lambda: datetime.now(UTC),
 ) -> MCPServer:
     """Build the MCP server, wiring each tool to ``repository``.
 
@@ -1031,6 +1113,78 @@ def build_server(
             and (not essential_only or requirement.essential)
         ]
         return _paginate(requirements, limit, cursor)
+
+    if dda_store is not None:
+
+        @server.tool(annotations=_WRITE, structured_output=True)
+        async def create_dda(
+            record_id: str,
+            profile: SystemProfile,
+            subsystem_id: str | None = None,
+        ) -> dict[str, object]:
+            """Crea y persiste una DdA completa para un sistema o subsistema."""
+            _, measures = await repository.fetch_corpus()
+            record = _new_dda_record(record_id, profile, measures, subsystem_id, clock())
+            dda_store.create(record)
+            return dict(dda_summary(record))
+
+        @server.tool(annotations=_READ_ONLY, structured_output=True)
+        async def list_dda() -> list[dict[str, object]]:
+            """Lista las DdA persistidas y el recuento de sus estados."""
+            return [dict(dda_summary(dda_store.load(item))) for item in dda_store.list_ids()]
+
+        @server.tool(annotations=_READ_ONLY, structured_output=True)
+        async def get_dda(record_id: str) -> dict[str, object]:
+            """Obtiene una DdA persistida con todas sus medidas y evidencias."""
+            return dda_to_dict(dda_store.load(record_id))
+
+        @server.tool(annotations=_WRITE, structured_output=True)
+        async def update_dda_measure_status(
+            record_id: str,
+            code: str,
+            implementation_status: ImplementationStatus,
+            justification: str = "",
+            owner: str = "",
+            evidence_references: list[str] | None = None,
+            exclusion_reason: str = "",
+            compensatory_measures: list[str] | None = None,
+            surveillance_measures: list[str] | None = None,
+            target_date: date | None = None,
+            review_date: date | None = None,
+        ) -> dict[str, object]:
+            """Actualiza estado, responsable, evidencias, excepciones y fechas de una medida."""
+            record = dda_store.load(record_id)
+            updated = update_dda_measure(
+                record,
+                _normalize(code),
+                DDAMeasureUpdate(
+                    implementation_status=implementation_status,
+                    justification=justification,
+                    owner=owner,
+                    evidence_references=tuple(evidence_references or ()),
+                    exclusion_reason=exclusion_reason,
+                    compensatory_measures=tuple(compensatory_measures or ()),
+                    surveillance_measures=tuple(surveillance_measures or ()),
+                    target_date=target_date,
+                    review_date=review_date,
+                ),
+                clock(),
+            )
+            dda_store.save(updated)
+            return dda_to_dict(updated)
+
+        if export_handler is not None:
+
+            @server.tool(annotations=_READ_ONLY, structured_output=True)
+            async def export_dda(record_id: str, output_format: ExportFormat) -> dict[str, str]:
+                """Exporta una DdA como JSON, CSV o Markdown codificado en base64."""
+                document = export_handler(dda_store.load(record_id), output_format)
+                return {
+                    "filename": document.filename,
+                    "mime_type": document.mime_type,
+                    "encoding": "base64",
+                    "content": b64encode(document.content).decode("ascii"),
+                }
 
     if guia is not None:
 

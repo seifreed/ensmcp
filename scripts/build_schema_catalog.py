@@ -10,6 +10,8 @@ from typing import Any
 
 from atomic_write import write_atomic
 
+from ensmcp.dda_export import export_dda
+from ensmcp.dda_store import FileDDAStore
 from ensmcp.guia.loader import load_packaged_guide
 from ensmcp.mcp_server.server import SCHEMA_VERSION, build_server
 from ensmcp.snapshot.repository import SnapshotRepository
@@ -24,6 +26,8 @@ async def build() -> dict[str, Any]:
         refresh=refresh,
         status=lambda: {"source": "snapshot"},
         guia=load_packaged_guide(),
+        dda_store=FileDDAStore(Path(".schema-catalog")),
+        export_handler=export_dda,
     )
     tools = sorted(await server.list_tools(), key=lambda tool: tool.name)
     return {
