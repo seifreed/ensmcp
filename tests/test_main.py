@@ -287,6 +287,8 @@ async def test_module_entry_point_serves_the_expected_tools() -> None:
             "get_measure",
             "search_measures",
             "declaracion_aplicabilidad",
+            "evaluate_system_profile",
+            "explain_applicability",
             "alcance_auditoria",
             "requisitos_auditoria",
             "requisitos_articulos",

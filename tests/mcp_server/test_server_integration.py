@@ -328,6 +328,122 @@ async def test_get_measure_tool_normalizes_the_code(local_server: MCPServer, cod
     check(measure["code"] == "org.1")
 
 
+def _system_profile() -> dict[str, Any]:
+    return {
+        "profile_id": "portal",
+        "system": "Portal de contratación",
+        "scope": "Sede electrónica",
+        "dimensions": {"confidencialidad": {"level": "bajo", "justification": "valoración base"}},
+        "information_assets": [
+            {
+                "component_id": "contracts",
+                "name": "Contratos",
+                "dimensions": {
+                    "confidencialidad": {
+                        "level": "alto",
+                        "justification": "contiene ofertas reservadas",
+                    }
+                },
+            }
+        ],
+        "subsystems": [
+            {
+                "subsystem_id": "backoffice",
+                "name": "Backoffice",
+                "scope": "Gestión interna",
+                "inheritance": False,
+                "dimensions": {"integridad": {"level": "medio", "justification": "expedientes"}},
+            }
+        ],
+        "compliance_profiles": [
+            {
+                "profile_id": "sector",
+                "additional_measures": ["mp.if.3"],
+                "excluded_measures": ["org.1"],
+            }
+        ],
+        "active_compliance_profile": "sector",
+    }
+
+
+async def test_system_profile_aggregates_assets_subsystems_and_controls(
+    local_server: MCPServer,
+) -> None:
+    result = await _call_result(
+        local_server,
+        "evaluate_system_profile",
+        {"profile": _system_profile()},
+    )
+    payload = result.structured_content or {}
+
+    check(payload["categoria_sistema"] == "alta")
+    confidentiality = payload["dimensions"]["confidencialidad"]
+    check(confidentiality["level"] == "alto")
+    check(len(confidentiality["evidence"]) == 2)
+    check("mp.if.3" in payload["applicable_measure_codes"])
+    check("org.1" not in payload["applicable_measure_codes"])
+    subsystem = payload["subsystems"][0]
+    check(subsystem["scope_id"] == "backoffice")
+    check(subsystem["categoria_sistema"] == "media")
+    check(subsystem["dimensions"]["integridad"]["level"] == "medio")
+
+
+async def test_explain_applicability_reports_profile_decisions_and_evidence(
+    local_server: MCPServer,
+) -> None:
+    added = await _call_result(
+        local_server,
+        "explain_applicability",
+        {"code": "mp.if.3", "profile": _system_profile()},
+    )
+    check((added.structured_content or {})["reason"]["basis"] == "profile_addition")
+
+    excluded = await _call_result(
+        local_server,
+        "explain_applicability",
+        {"code": "org.1", "profile": _system_profile()},
+    )
+    check((excluded.structured_content or {})["reason"]["basis"] == "profile_exclusion")
+
+    profile = _system_profile()
+    profile["compliance_profiles"] = []
+    profile["active_compliance_profile"] = None
+    explained = await _call_result(
+        local_server,
+        "explain_applicability",
+        {"code": "op.acc.5", "profile": profile},
+    )
+    reason = (explained.structured_content or {})["reason"]
+    check(reason["basis"] == "dimension")
+    check(reason["system_level"] == "alto")
+    check(reason["evidence"][-1]["justification"] == "contiene ofertas reservadas")
+
+    unvalued = await _call_result(
+        local_server,
+        "explain_applicability",
+        {"code": "mp.if.3", "profile": profile},
+    )
+    check((unvalued.structured_content or {})["reason"]["basis"] == "unvalued_dimension")
+
+    category = await _call_result(
+        local_server,
+        "explain_applicability",
+        {"code": "org.1", "profile": profile},
+    )
+    check((category.structured_content or {})["reason"]["basis"] == "category")
+
+    with pytest.raises(ToolError, match="subsistema desconocido"):
+        await local_server.call_tool(
+            "explain_applicability",
+            {"code": "org.1", "profile": profile, "subsystem_id": "missing"},
+        )
+
+    duplicate = _system_profile()
+    duplicate["subsystems"] = [duplicate["subsystems"][0], duplicate["subsystems"][0]]
+    with pytest.raises(ToolError, match="subsystem_id deben ser únicos"):
+        await local_server.call_tool("evaluate_system_profile", {"profile": duplicate})
+
+
 @pytest.mark.parametrize("query", ["seguridad", " seguridad "])
 async def test_search_measures_tool_finds_matches_ignoring_surrounding_whitespace(
     local_server: MCPServer, query: str
@@ -909,6 +1025,8 @@ async def test_build_server_without_refresh_exposes_no_refresh_tool() -> None:
             "get_measure",
             "search_measures",
             "declaracion_aplicabilidad",
+            "evaluate_system_profile",
+            "explain_applicability",
             "alcance_auditoria",
             "requisitos_auditoria",
         }

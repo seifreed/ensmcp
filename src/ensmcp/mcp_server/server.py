@@ -8,8 +8,9 @@ scraping layer is only referenced through the MeasureRepository port.
 from __future__ import annotations
 
 import json
-from collections.abc import Awaitable, Callable, Collection, Iterable, Sequence
+from collections.abc import Awaitable, Callable, Collection, Iterable, Mapping, Sequence
 from enum import Enum
+from importlib import resources
 from typing import Any
 
 from mcp.server.mcpserver import MCPServer
@@ -28,6 +29,13 @@ from ensmcp.domain.models import (
     SecurityMeasure,
     SystemCategory,
 )
+from ensmcp.domain.profiles import (
+    EffectiveDimension,
+    ResolvedComplianceProfile,
+    SystemProfile,
+    effective_dimensions,
+    resolve_compliance_profile,
+)
 from ensmcp.domain.queries import (
     applicable_measures,
     code_order,
@@ -35,12 +43,12 @@ from ensmcp.domain.queries import (
     find_measure_by_code,
     fold,
     required_audit_requirements,
+    required_level,
     required_maturity_level,
     search_measures_by_text,
     system_category,
 )
 from ensmcp.domain.repository import MeasureRepository
-from ensmcp.schema_catalog import load_schema_catalog
 
 RefreshHandler = Callable[[], Awaitable[None]]
 # Returns whatever the data source wants to report about its own freshness. The
@@ -50,6 +58,7 @@ StatusHandler = Callable[[], dict[str, object]]
 
 _READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False)
 _EXTERNAL_READ = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=True)
+SCHEMA_VERSION = "1.0.0"
 
 # Bajo/Medio/Alto, in the order the ENS itself ranks them. Sorting the wire
 # payload by level *value* would instead give "alto, bajo, medio", alphabetical
@@ -393,6 +402,178 @@ def _require_measure(measures: Sequence[SecurityMeasure], raw: str) -> SecurityM
     return measure
 
 
+def _load_schema_catalog() -> dict[str, Any]:
+    path = resources.files("ensmcp") / "schemas" / "v1" / "tools.json"
+    catalog: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+    return catalog
+
+
+def _profile_controls(
+    profile: SystemProfile, measures: Sequence[SecurityMeasure]
+) -> ResolvedComplianceProfile:
+    controls = resolve_compliance_profile(
+        profile.compliance_profiles, profile.active_compliance_profile
+    )
+
+    def normalize(codes: Iterable[str]) -> frozenset[str]:
+        return frozenset(_require_measure(measures, code).code for code in codes)
+
+    return ResolvedComplianceProfile(
+        chain=controls.chain,
+        overrides=controls.overrides,
+        additional_measures=normalize(controls.additional_measures),
+        excluded_measures=normalize(controls.excluded_measures),
+    )
+
+
+def _profile_scope(
+    profile: SystemProfile,
+    measures: Sequence[SecurityMeasure],
+    subsystem_id: str | None = None,
+) -> tuple[
+    str,
+    str,
+    dict[SecurityDimension, EffectiveDimension],
+    ResolvedComplianceProfile,
+]:
+    controls = _profile_controls(profile, measures)
+    base = effective_dimensions(
+        profile.dimensions,
+        source=f"system:{profile.profile_id}",
+        information_assets=profile.information_assets,
+        services=profile.services,
+        overrides=controls.overrides,
+    )
+    if subsystem_id is None:
+        return profile.profile_id, profile.scope, base, controls
+
+    by_id = {subsystem.subsystem_id: subsystem for subsystem in profile.subsystems}
+    if len(by_id) != len(profile.subsystems):
+        raise ValueError("los subsystem_id deben ser únicos")
+    subsystem = by_id.get(subsystem_id)
+    if subsystem is None:
+        raise ValueError(f"subsistema desconocido: {subsystem_id!r}")
+    resolved = effective_dimensions(
+        subsystem.dimensions,
+        source=f"subsystem:{subsystem.subsystem_id}",
+        information_assets=subsystem.information_assets,
+        services=subsystem.services,
+        inherited=base if subsystem.inheritance else None,
+        overrides=controls.overrides,
+    )
+    return subsystem.subsystem_id, subsystem.scope, resolved, controls
+
+
+def _effective_dimensions_to_dict(
+    dimensions: Mapping[SecurityDimension, EffectiveDimension],
+) -> dict[str, Any]:
+    return {
+        dimension.value: {
+            "level": value.level.value,
+            "evidence": [
+                {
+                    "source": item.source,
+                    "level": item.level.value,
+                    "justification": item.justification,
+                }
+                for item in value.evidence
+            ],
+        }
+        for dimension in SecurityDimension
+        if (value := dimensions.get(dimension)) is not None
+    }
+
+
+def _profile_scope_to_dict(
+    profile: SystemProfile,
+    measures: Sequence[SecurityMeasure],
+    subsystem_id: str | None = None,
+) -> dict[str, Any]:
+    scope_id, scope, dimensions, controls = _profile_scope(profile, measures, subsystem_id)
+    levels = {dimension: value.level for dimension, value in dimensions.items()}
+    calculated = {item.measure.code for item in applicable_measures(measures, levels)}
+    applicable = sorted(
+        (calculated | controls.additional_measures) - controls.excluded_measures,
+        key=code_order,
+    )
+    return {
+        "scope_id": scope_id,
+        "scope": scope,
+        "categoria_sistema": system_category(levels).value,
+        "dimensions": _effective_dimensions_to_dict(dimensions),
+        "compliance_profile_chain": list(controls.chain),
+        "applicable_measure_codes": applicable,
+    }
+
+
+def _explain_profile_measure(
+    measure: SecurityMeasure,
+    dimensions: Mapping[SecurityDimension, EffectiveDimension],
+    controls: ResolvedComplianceProfile,
+    *,
+    scope_id: str,
+) -> dict[str, Any]:
+    levels = {dimension: value.level for dimension, value in dimensions.items()}
+    level = required_level(measure, levels)
+    matched_dimensions = [
+        dimension
+        for dimension in _DIMENSION_SORT_ORDER
+        if level is not None and dimension in measure.dimensions and levels.get(dimension) is level
+    ]
+    table_cell = (
+        measure.raw_levels[_LEVEL_SORT_ORDER.index(level)]
+        if level is not None and len(measure.raw_levels) == len(_LEVEL_SORT_ORDER)
+        else None
+    )
+    if measure.code in controls.excluded_measures:
+        applicable = False
+        basis = "profile_exclusion"
+    elif measure.code in controls.additional_measures:
+        applicable = True
+        basis = "profile_addition"
+    elif level is None:
+        applicable = False
+        basis = "unvalued_dimension"
+    else:
+        applicable = level in measure.levels
+        basis = "category" if measure.dimensions == frozenset(SecurityDimension) else "dimension"
+
+    return {
+        "scope_id": scope_id,
+        "measure_code": measure.code,
+        "applicable": applicable,
+        "reason": {
+            "basis": basis,
+            "dimensions": [dimension.value for dimension in matched_dimensions],
+            "system_level": level.value if level is not None else None,
+            "table_cell": table_cell,
+            "profile_chain": list(controls.chain),
+            "evidence": [
+                {
+                    "dimension": dimension.value,
+                    "source": item.source,
+                    "level": item.level.value,
+                    "justification": item.justification,
+                }
+                for dimension in matched_dimensions
+                for item in dimensions[dimension].evidence
+            ],
+        },
+        "required_reinforcements": [
+            {
+                "code": reinforcement.code,
+                "alternative": reinforcement.alternative,
+                "text": reinforcement.text,
+            }
+            for reinforcement in sorted(
+                measure.reinforcements,
+                key=lambda item: (code_order(item.code), item.alternative, item.text),
+            )
+            if level is not None and reinforcement.level is level
+        ],
+    }
+
+
 def _parse_optional_enum[E: Enum](enum_type: type[E], raw: str | None, argument: str) -> E | None:
     """Resolve one enum-valued tool argument, or say what would have worked.
 
@@ -496,7 +677,7 @@ def build_server(
         mime_type="application/schema+json",
     )
     async def tool_schemas_resource() -> str:
-        return _resource_json(load_schema_catalog())
+        return _resource_json(_load_schema_catalog())
 
     @server.resource(
         "ens://schemas/v1/tools/{name}",
@@ -506,7 +687,7 @@ def build_server(
         mime_type="application/schema+json",
     )
     async def tool_schema_resource(name: str) -> str:
-        schemas = load_schema_catalog()["tools"]
+        schemas = _load_schema_catalog()["tools"]
         if name not in schemas:
             raise ValueError(f"{name!r} no es una tool publicada en el schema v1")
         return _resource_json(schemas[name])
@@ -706,6 +887,42 @@ def build_server(
             "categoria_sistema": system_category(levels).value,
             "measures": page,
         }
+
+    @server.tool(annotations=_READ_ONLY, structured_output=True)
+    async def evaluate_system_profile(profile: SystemProfile) -> dict[str, Any]:
+        """Evalúa un perfil completo y sus subsistemas contra el Anexo II.
+
+        Los máximos se calculan con las dimensiones del sistema, sus activos de
+        información y sus servicios. Cada resultado conserva la justificación y
+        el origen que llevó a ese nivel. Los subsistemas pueden heredar esos
+        máximos o evaluarse de forma aislada.
+        """
+        _, measures = await repository.fetch_corpus()
+        return {
+            "profile_id": profile.profile_id,
+            "system": profile.system,
+            **_profile_scope_to_dict(profile, measures),
+            "subsystems": [
+                {
+                    "name": subsystem.name,
+                    "inheritance": subsystem.inheritance,
+                    **_profile_scope_to_dict(profile, measures, subsystem.subsystem_id),
+                }
+                for subsystem in profile.subsystems
+            ],
+        }
+
+    @server.tool(annotations=_READ_ONLY, structured_output=True)
+    async def explain_applicability(
+        code: str,
+        profile: SystemProfile,
+        subsystem_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Explica por qué una medida aplica, no aplica o fue forzada por un perfil."""
+        _, measures = await repository.fetch_corpus()
+        measure = _require_measure(measures, code)
+        scope_id, _, dimensions, controls = _profile_scope(profile, measures, subsystem_id)
+        return _explain_profile_measure(measure, dimensions, controls, scope_id=scope_id)
 
     @server.tool(annotations=_READ_ONLY, structured_output=True)
     async def alcance_auditoria(

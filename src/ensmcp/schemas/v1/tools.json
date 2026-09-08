@@ -256,6 +256,298 @@
         "type": "object"
       }
     },
+    "evaluate_system_profile": {
+      "inputSchema": {
+        "$defs": {
+          "ComplianceProfile": {
+            "properties": {
+              "profile_id": {
+                "title": "Profile Id",
+                "type": "string"
+              },
+              "inherits": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Inherits"
+              },
+              "profile_overrides": {
+                "$ref": "#/$defs/DimensionProfile"
+              },
+              "additional_measures": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Additional Measures",
+                "type": "array"
+              },
+              "excluded_measures": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Excluded Measures",
+                "type": "array"
+              }
+            },
+            "required": [
+              "profile_id"
+            ],
+            "title": "ComplianceProfile",
+            "type": "object"
+          },
+          "DimensionAssessment": {
+            "properties": {
+              "level": {
+                "$ref": "#/$defs/DimensionLevel"
+              },
+              "justification": {
+                "default": "",
+                "title": "Justification",
+                "type": "string"
+              }
+            },
+            "required": [
+              "level"
+            ],
+            "title": "DimensionAssessment",
+            "type": "object"
+          },
+          "DimensionLevel": {
+            "description": "Nivel de una dimensión de seguridad del sistema.",
+            "enum": [
+              "bajo",
+              "bajo",
+              "medio",
+              "alto"
+            ],
+            "title": "DimensionLevel",
+            "type": "string"
+          },
+          "DimensionProfile": {
+            "properties": {
+              "confidencialidad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "integridad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "disponibilidad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "autenticidad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "trazabilidad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              }
+            },
+            "title": "DimensionProfile",
+            "type": "object"
+          },
+          "ProfileComponent": {
+            "properties": {
+              "component_id": {
+                "title": "Component Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "dimensions": {
+                "$ref": "#/$defs/DimensionProfile"
+              }
+            },
+            "required": [
+              "component_id",
+              "name"
+            ],
+            "title": "ProfileComponent",
+            "type": "object"
+          },
+          "SubsystemProfile": {
+            "properties": {
+              "subsystem_id": {
+                "title": "Subsystem Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "scope": {
+                "default": "",
+                "title": "Scope",
+                "type": "string"
+              },
+              "inheritance": {
+                "default": true,
+                "title": "Inheritance",
+                "type": "boolean"
+              },
+              "dimensions": {
+                "$ref": "#/$defs/DimensionProfile"
+              },
+              "information_assets": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ProfileComponent"
+                },
+                "title": "Information Assets",
+                "type": "array"
+              },
+              "services": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ProfileComponent"
+                },
+                "title": "Services",
+                "type": "array"
+              }
+            },
+            "required": [
+              "subsystem_id",
+              "name"
+            ],
+            "title": "SubsystemProfile",
+            "type": "object"
+          },
+          "SystemProfile": {
+            "properties": {
+              "profile_id": {
+                "title": "Profile Id",
+                "type": "string"
+              },
+              "system": {
+                "title": "System",
+                "type": "string"
+              },
+              "scope": {
+                "title": "Scope",
+                "type": "string"
+              },
+              "dimensions": {
+                "$ref": "#/$defs/DimensionProfile"
+              },
+              "information_assets": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ProfileComponent"
+                },
+                "title": "Information Assets",
+                "type": "array"
+              },
+              "services": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ProfileComponent"
+                },
+                "title": "Services",
+                "type": "array"
+              },
+              "subsystems": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/SubsystemProfile"
+                },
+                "title": "Subsystems",
+                "type": "array"
+              },
+              "compliance_profiles": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ComplianceProfile"
+                },
+                "title": "Compliance Profiles",
+                "type": "array"
+              },
+              "active_compliance_profile": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Active Compliance Profile"
+              }
+            },
+            "required": [
+              "profile_id",
+              "system",
+              "scope"
+            ],
+            "title": "SystemProfile",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "profile": {
+            "$ref": "#/$defs/SystemProfile"
+          }
+        },
+        "required": [
+          "profile"
+        ],
+        "title": "evaluate_system_profileArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "evaluate_system_profileDictOutput",
+        "type": "object"
+      }
+    },
     "evidencias_auditoria": {
       "inputSchema": {
         "properties": {
@@ -290,6 +582,315 @@
           "result"
         ],
         "title": "evidencias_auditoriaOutput",
+        "type": "object"
+      }
+    },
+    "explain_applicability": {
+      "inputSchema": {
+        "$defs": {
+          "ComplianceProfile": {
+            "properties": {
+              "profile_id": {
+                "title": "Profile Id",
+                "type": "string"
+              },
+              "inherits": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Inherits"
+              },
+              "profile_overrides": {
+                "$ref": "#/$defs/DimensionProfile"
+              },
+              "additional_measures": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Additional Measures",
+                "type": "array"
+              },
+              "excluded_measures": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Excluded Measures",
+                "type": "array"
+              }
+            },
+            "required": [
+              "profile_id"
+            ],
+            "title": "ComplianceProfile",
+            "type": "object"
+          },
+          "DimensionAssessment": {
+            "properties": {
+              "level": {
+                "$ref": "#/$defs/DimensionLevel"
+              },
+              "justification": {
+                "default": "",
+                "title": "Justification",
+                "type": "string"
+              }
+            },
+            "required": [
+              "level"
+            ],
+            "title": "DimensionAssessment",
+            "type": "object"
+          },
+          "DimensionLevel": {
+            "description": "Nivel de una dimensión de seguridad del sistema.",
+            "enum": [
+              "bajo",
+              "bajo",
+              "medio",
+              "alto"
+            ],
+            "title": "DimensionLevel",
+            "type": "string"
+          },
+          "DimensionProfile": {
+            "properties": {
+              "confidencialidad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "integridad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "disponibilidad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "autenticidad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "trazabilidad": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DimensionAssessment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              }
+            },
+            "title": "DimensionProfile",
+            "type": "object"
+          },
+          "ProfileComponent": {
+            "properties": {
+              "component_id": {
+                "title": "Component Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "dimensions": {
+                "$ref": "#/$defs/DimensionProfile"
+              }
+            },
+            "required": [
+              "component_id",
+              "name"
+            ],
+            "title": "ProfileComponent",
+            "type": "object"
+          },
+          "SubsystemProfile": {
+            "properties": {
+              "subsystem_id": {
+                "title": "Subsystem Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "scope": {
+                "default": "",
+                "title": "Scope",
+                "type": "string"
+              },
+              "inheritance": {
+                "default": true,
+                "title": "Inheritance",
+                "type": "boolean"
+              },
+              "dimensions": {
+                "$ref": "#/$defs/DimensionProfile"
+              },
+              "information_assets": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ProfileComponent"
+                },
+                "title": "Information Assets",
+                "type": "array"
+              },
+              "services": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ProfileComponent"
+                },
+                "title": "Services",
+                "type": "array"
+              }
+            },
+            "required": [
+              "subsystem_id",
+              "name"
+            ],
+            "title": "SubsystemProfile",
+            "type": "object"
+          },
+          "SystemProfile": {
+            "properties": {
+              "profile_id": {
+                "title": "Profile Id",
+                "type": "string"
+              },
+              "system": {
+                "title": "System",
+                "type": "string"
+              },
+              "scope": {
+                "title": "Scope",
+                "type": "string"
+              },
+              "dimensions": {
+                "$ref": "#/$defs/DimensionProfile"
+              },
+              "information_assets": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ProfileComponent"
+                },
+                "title": "Information Assets",
+                "type": "array"
+              },
+              "services": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ProfileComponent"
+                },
+                "title": "Services",
+                "type": "array"
+              },
+              "subsystems": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/SubsystemProfile"
+                },
+                "title": "Subsystems",
+                "type": "array"
+              },
+              "compliance_profiles": {
+                "default": [],
+                "items": {
+                  "$ref": "#/$defs/ComplianceProfile"
+                },
+                "title": "Compliance Profiles",
+                "type": "array"
+              },
+              "active_compliance_profile": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Active Compliance Profile"
+              }
+            },
+            "required": [
+              "profile_id",
+              "system",
+              "scope"
+            ],
+            "title": "SystemProfile",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "profile": {
+            "$ref": "#/$defs/SystemProfile"
+          },
+          "subsystem_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subsystem Id"
+          }
+        },
+        "required": [
+          "code",
+          "profile"
+        ],
+        "title": "explain_applicabilityArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "explain_applicabilityDictOutput",
         "type": "object"
       }
     },

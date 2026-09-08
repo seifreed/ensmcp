@@ -8,6 +8,9 @@
 
 ## Unreleased
 
+- Perfiles completos de sistema, subsistemas heredables y explicación de aplicabilidad.
+- Schemas MCP públicos versionados y errores homogéneos para medidas desconocidas.
+- Releases limitadas a tags anotados cuya firma valide GitHub.
 - El servidor usa el snapshot offline por defecto.
 - Se puede seleccionar `--offline`, `--check-updates` o `--live`.
 - La documentación distingue la matriz normativa base de una DdA formal.

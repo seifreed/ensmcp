@@ -11,8 +11,7 @@ from typing import Any
 from atomic_write import write_atomic
 
 from ensmcp.guia.loader import load_packaged_guide
-from ensmcp.mcp_server.server import build_server
-from ensmcp.schema_catalog import SCHEMA_VERSION
+from ensmcp.mcp_server.server import SCHEMA_VERSION, build_server
 from ensmcp.snapshot.repository import SnapshotRepository
 
 

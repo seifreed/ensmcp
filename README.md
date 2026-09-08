@@ -61,6 +61,8 @@ Además del Anexo II, incorpora el cuestionario de verificación de la **guía C
 | Tool | Args | Descripción |
 |------|------|-------------|
 | `declaracion_aplicabilidad` | `confidencialidad?`, `integridad?`, `disponibilidad?`, `autenticidad?`, `trazabilidad?` | La matriz normativa base para preparar la DdA: se valora cada dimensión (`bajo`/`medio`/`alto`, u omitida) y devuelve las medidas exigibles con sus refuerzos. |
+| `evaluate_system_profile` | `profile` | Calcula máximos por activos y servicios, aplica perfiles heredados y evalúa subsistemas. |
+| `explain_applicability` | `code`, `profile`, `subsystem_id?` | Explica la dimensión, nivel, celda, justificación o regla de perfil que decide una medida. |
 | `alcance_auditoria` | mismas que la DdA | El temario de auditoría del sistema: las medidas aplicables con sus preguntas de verificación acumuladas y el nivel de madurez mínimo exigible. |
 | `requisitos_auditoria` | `code?`, `level?` | El cuestionario CCN-STIC 808 en bruto, por medida o por tramo, marcando los requisitos esenciales. |
 | `requisitos_articulos` | — | Las comprobaciones de auditoría sobre el articulado del RD (DdA formal, categorización, INES...). |
