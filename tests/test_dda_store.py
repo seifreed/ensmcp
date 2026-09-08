@@ -24,6 +24,12 @@ def test_environment_location_and_empty_store(
     check(FileDDAStore.from_environment().root == tmp_path / ".ensmcp" / "dda")
 
 
+def test_list_ignores_json_files_that_cannot_be_record_ids(tmp_path: Path) -> None:
+    (tmp_path / "not a record.json").write_text("{}", encoding="utf-8")
+
+    check(FileDDAStore(tmp_path).list_ids() == ())
+
+
 def test_create_load_update_list_and_refuse_overwrite(tmp_path: Path) -> None:
     store = FileDDAStore(tmp_path)
     record = sample_dda()

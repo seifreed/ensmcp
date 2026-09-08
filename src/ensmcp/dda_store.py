@@ -74,4 +74,10 @@ class FileDDAStore:
     def list_ids(self) -> tuple[str, ...]:
         if not self.root.is_dir():
             return ()
-        return tuple(sorted(path.stem for path in self.root.glob("*.json") if path.is_file()))
+        return tuple(
+            sorted(
+                path.stem
+                for path in self.root.glob("*.json")
+                if path.is_file() and _RECORD_ID.fullmatch(path.stem)
+            )
+        )
