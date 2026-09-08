@@ -1177,7 +1177,7 @@ def build_server(
 
             @server.tool(annotations=_READ_ONLY, structured_output=True)
             async def export_dda(record_id: str, output_format: ExportFormat) -> dict[str, str]:
-                """Exporta una DdA como JSON, CSV o Markdown codificado en base64."""
+                """Exporta una DdA como JSON, CSV, Markdown, XLSX, ODS o DOCX en base64."""
                 document = export_handler(dda_store.load(record_id), output_format)
                 return {
                     "filename": document.filename,

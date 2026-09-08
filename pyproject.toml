@@ -15,7 +15,10 @@ requires-python = ">=3.12"
 # universal lock. `tests/test_packaging.py` keeps the manifest and lock aligned.
 dependencies = [
     "mcp>=2.0.0",
+    "odfpy>=1.4.1",
+    "openpyxl>=3.1.5",
     "pydantic>=2.13.5",
+    "python-docx>=1.2.0",
 ]
 
 [project.scripts]

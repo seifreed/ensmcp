@@ -1210,7 +1210,10 @@
             "enum": [
               "json",
               "csv",
-              "markdown"
+              "markdown",
+              "xlsx",
+              "ods",
+              "docx"
             ],
             "title": "ExportFormat",
             "type": "string"

@@ -67,7 +67,7 @@ Además del Anexo II, incorpora el cuestionario de verificación de la **guía C
 | `list_dda` | — | Lista las DdA guardadas y resume sus estados de implantación. |
 | `get_dda` | `record_id` | Recupera una DdA completa. |
 | `update_dda_measure_status` | `record_id`, `code`, `implementation_status`, ... | Registra estado, responsable, evidencias, exclusión o compensación, vigilancia y fechas. |
-| `export_dda` | `record_id`, `output_format` | Exporta como `json`, `csv` o `markdown`; el contenido se devuelve en base64. |
+| `export_dda` | `record_id`, `output_format` | Exporta como `json`, `csv`, `markdown`, `xlsx`, `ods` o `docx`; el contenido se devuelve en base64. |
 | `alcance_auditoria` | mismas que la DdA | El temario de auditoría del sistema: las medidas aplicables con sus preguntas de verificación acumuladas y el nivel de madurez mínimo exigible. |
 | `requisitos_auditoria` | `code?`, `level?` | El cuestionario CCN-STIC 808 en bruto, por medida o por tramo, marcando los requisitos esenciales. |
 | `requisitos_articulos` | — | Las comprobaciones de auditoría sobre el articulado del RD (DdA formal, categorización, INES...). |

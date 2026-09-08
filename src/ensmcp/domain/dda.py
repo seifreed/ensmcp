@@ -26,6 +26,9 @@ class ExportFormat(StrEnum):
     JSON = "json"
     CSV = "csv"
     MARKDOWN = "markdown"
+    XLSX = "xlsx"
+    ODS = "ods"
+    DOCX = "docx"
 
 
 @dataclass(frozen=True, slots=True)
