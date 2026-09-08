@@ -44,12 +44,18 @@ def _markdown_cell(value: object) -> str:
     return str(value).replace("|", "\\|").replace("\n", " ")
 
 
+def _spreadsheet_cell(value: object) -> object:
+    if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")):
+        return f"'{value}"
+    return value
+
+
 def _xlsx(headers: tuple[str, ...], rows: list[dict[str, object]]) -> bytes:
     workbook = Workbook(write_only=True)
     sheet = workbook.create_sheet("DdA")
     sheet.append(headers)
     for row in rows:
-        sheet.append([row[header] for header in headers])
+        sheet.append([_spreadsheet_cell(row[header]) for header in headers])
     stream = io.BytesIO()
     workbook.save(stream)
     return stream.getvalue()
@@ -101,7 +107,9 @@ def export_dda(record: DDARecord, output_format: ExportFormat) -> ExportedDocume
         stream = io.StringIO(newline="")
         writer = csv.DictWriter(stream, fieldnames=headers, lineterminator="\n")
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows(
+            {_header: _spreadsheet_cell(row[_header]) for _header in headers} for row in rows
+        )
         return ExportedDocument(
             f"{record.record_id}.csv", "text/csv", stream.getvalue().encode("utf-8")
         )

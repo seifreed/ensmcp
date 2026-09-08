@@ -68,3 +68,20 @@ def test_xlsx_ods_and_docx_exports_open_with_their_native_readers() -> None:
     check(document.paragraphs[0].text == "Declaración de Aplicabilidad: Portal")
     check(document.tables[0].cell(0, 0).text == "measure_code")
     check(document.tables[0].cell(1, 0).text == "org.1")
+
+
+def test_spreadsheet_exports_neutralize_formula_cells() -> None:
+    record = sample_dda()
+    measure = replace(record.measures[0], owner="=1+1")
+    record = replace(record, measures=(measure, *record.measures[1:]))
+
+    csv_document = export_dda(record, ExportFormat.CSV)
+    csv_row = next(csv.DictReader(io.StringIO(csv_document.content.decode("utf-8"))))
+    check(csv_row["owner"] == "'=1+1")
+
+    xlsx_document = export_dda(record, ExportFormat.XLSX)
+    workbook = load_workbook(io.BytesIO(xlsx_document.content), read_only=True)
+    owner = next(workbook["DdA"].iter_rows(min_row=2))[7]
+    workbook.close()
+    check(owner.value == "'=1+1")
+    check(owner.data_type == "s")
