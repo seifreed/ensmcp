@@ -30,7 +30,7 @@
 
 Los datos viajan incluidos en el paquete como un snapshot, así que el servidor responde al instante y funciona sin conexión. El modo predeterminado es `offline`: no abre Chrome ni accede a la red. `--check-updates` comprueba la fuente oficial sin sustituir el snapshot y `--live` permite adoptar temporalmente los datos vivos.
 
-La procedencia y el alcance declarado de la autorización para publicar los datos se documentan en [`DATA_LICENSE.md`](DATA_LICENSE.md) y [`CCN_AUTHORIZATION.md`](CCN_AUTHORIZATION.md). El procedimiento de publicación y firma está en [`RELEASING.md`](RELEASING.md).
+La procedencia y el alcance declarado de la autorización para publicar los datos se documentan en [`DATA_LICENSE.md`](DATA_LICENSE.md) y [`CCN_AUTHORIZATION.md`](CCN_AUTHORIZATION.md). La autorización del registro MCP consta en [`MCP_REGISTRY.md`](MCP_REGISTRY.md) y el procedimiento de publicación y firma está en [`RELEASING.md`](RELEASING.md).
 
 Además del Anexo II, incorpora el cuestionario de verificación de la **guía CCN-STIC 808** (edición para el RD 311/2022): las preguntas de auditoría por medida, las comprobaciones sobre el articulado del RD y las evidencias documentales que puede pedir el auditor.
 

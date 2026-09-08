@@ -16,6 +16,7 @@ que fija 2.0.0, así que el extremo bajo del rango no se ejercitaba nunca.
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import sys
 import tomllib
@@ -115,6 +116,29 @@ def test_release_attaches_data_packs_but_does_not_publish_them_to_pypi() -> None
     check("cp packs/*.json dist/" in workflow)
     check("sha256sum dora.json iso27001.json nis2.json > data-packs.sha256" in workflow)
     check("Keep only Python distributions for PyPI" in workflow)
+
+
+def test_mcp_registry_metadata_and_publisher_are_release_controlled() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    metadata = json.loads((_ROOT / "server.json").read_text(encoding="utf-8"))
+
+    check(metadata["name"] == "io.github.seifreed/ensmcp")
+    check(
+        metadata["packages"]
+        == [
+            {
+                "registryType": "pypi",
+                "identifier": "ensmcp",
+                "version": metadata["version"],
+                "transport": {"type": "stdio"},
+            }
+        ]
+    )
+    check("MCP_PUBLISHER_VERSION: v1.8.1" in workflow)
+    check("a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc" in workflow)
+    check("releases/latest/download" not in workflow)
+    check("./mcp-publisher validate" in workflow)
+    check("./mcp-publisher login github-oidc" in workflow)
 
 
 # El probe viaja como argv de `-c`, y en la locale C de Linux CPython aborta en
