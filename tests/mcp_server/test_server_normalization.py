@@ -17,7 +17,8 @@ from ensmcp.domain.models import (
     SecurityDimension,
     SecurityMeasure,
 )
-from ensmcp.mcp_server.server import _normalize_filter_value, build_server
+from ensmcp.mcp_server.boundary import _normalize_filter_value
+from ensmcp.mcp_server.server import build_server
 from ensmcp.scraping.parsers import parse_category, parse_measure
 from ensmcp.snapshot.codec import dump
 from ensmcp.snapshot.repository import SnapshotRepository

@@ -125,8 +125,8 @@ def test_the_mcp_layer_reaches_the_data_only_through_the_domain() -> None:
     for path in _modules_in("mcp_server"):
         for imported in _package_imports(path):
             check(
-                imported.startswith("ensmcp.domain"),
-                f"{_module_name(path)} importa {imported}: la capa MCP sólo depende del dominio",
+                imported.startswith(("ensmcp.domain", "ensmcp.mcp_server")),
+                f"{_module_name(path)} importa {imported}: la capa MCP sale de su capa o dominio",
             )
 
 
