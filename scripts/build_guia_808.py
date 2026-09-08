@@ -7,7 +7,7 @@ for. Both are in the CCN-STIC 808, so they come from the guide's PDF instead of
 from the site.
 
 What gets committed is the **extracted data**, with its attribution, not the
-guide: the PDF stays out of the repository (see .gitignore). Regenerating this
+guide: the PDF stays out of the repository. Regenerating this
 therefore needs a copy of it, the same way regenerating the snapshot needs
 Chrome.
 
