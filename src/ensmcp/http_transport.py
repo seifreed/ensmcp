@@ -51,8 +51,10 @@ class HTTPSettings:
 
 
 def _matches(value: str, allowed: Sequence[str]) -> bool:
-    return value in allowed or any(
-        item.endswith(":*") and value.startswith(f"{item[:-2]}:") for item in allowed
+    value = value.casefold()
+    return any(
+        value == item or (item.endswith(":*") and value.startswith(f"{item[:-2]}:"))
+        for item in map(str.casefold, allowed)
     )
 
 

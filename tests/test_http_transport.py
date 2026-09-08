@@ -93,6 +93,8 @@ def test_http_settings_reject_unsafe_configuration() -> None:
 def test_host_match_is_exact_or_explicit_port_wildcard() -> None:
     check(_matches("localhost", ("localhost",)))
     check(_matches("localhost:8123", ("localhost:*",)))
+    check(_matches("LOCALHOST:8123", ("localhost:*",)))
+    check(_matches("HTTPS://CLIENT.EXAMPLE", ("https://client.example",)))
     check(not _matches("localhost", ("example.com", "example.com:*")))
 
 
