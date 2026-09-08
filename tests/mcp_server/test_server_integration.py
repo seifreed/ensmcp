@@ -395,6 +395,23 @@ async def test_system_profile_aggregates_assets_subsystems_and_controls(
     check(subsystem["dimensions"]["integridad"]["level"] == "medio")
 
 
+async def test_system_profile_rejects_controls_that_conflict_after_normalization(
+    local_server: MCPServer,
+) -> None:
+    profile = _system_profile()
+    profile["compliance_profiles"] = [
+        {
+            "profile_id": "contradictory",
+            "additional_measures": ["ORG.1"],
+            "excluded_measures": ["org.1"],
+        }
+    ]
+    profile["active_compliance_profile"] = "contradictory"
+
+    with pytest.raises(ToolError, match="añadir y excluir"):
+        await local_server.call_tool("evaluate_system_profile", {"profile": profile})
+
+
 async def test_explain_applicability_reports_profile_decisions_and_evidence(
     local_server: MCPServer,
 ) -> None:

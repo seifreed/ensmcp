@@ -164,11 +164,18 @@ def _profile_controls(
     def normalize(codes: Iterable[str]) -> frozenset[str]:
         return frozenset(_require_measure(measures, code).code for code in codes)
 
+    additional = normalize(controls.additional_measures)
+    excluded = normalize(controls.excluded_measures)
+    conflicting = additional & excluded
+    if conflicting:
+        raise ValueError(
+            "un perfil no puede añadir y excluir las mismas medidas: " f"{sorted(conflicting)}"
+        )
     return ResolvedComplianceProfile(
         chain=controls.chain,
         overrides=controls.overrides,
-        additional_measures=normalize(controls.additional_measures),
-        excluded_measures=normalize(controls.excluded_measures),
+        additional_measures=additional,
+        excluded_measures=excluded,
     )
 
 
