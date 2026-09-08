@@ -186,9 +186,9 @@ def update_dda_measure(
         update.exclusion_reason.strip()
     ):
         raise ValueError("una medida excluida requiere exclusion_reason")
-    if (
-        update.implementation_status is ImplementationStatus.COMPENSATED
-        and not update.compensatory_measures
+    if update.implementation_status is ImplementationStatus.COMPENSATED and (
+        not update.compensatory_measures
+        or any(not item.strip() for item in update.compensatory_measures)
     ):
         raise ValueError("una medida compensada requiere compensatory_measures")
 

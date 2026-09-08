@@ -88,6 +88,13 @@ def test_update_validates_exclusions_compensation_and_measure_code() -> None:
         update_dda_measure(
             sample_dda(), "org.1", DDAMeasureUpdate(ImplementationStatus.COMPENSATED), now
         )
+    with pytest.raises(ValueError, match="compensatory_measures"):
+        update_dda_measure(
+            sample_dda(),
+            "org.1",
+            DDAMeasureUpdate(ImplementationStatus.COMPENSATED, compensatory_measures=(" ",)),
+            now,
+        )
     with pytest.raises(ValueError, match="no contiene"):
         update_dda_measure(
             sample_dda(), "missing", DDAMeasureUpdate(ImplementationStatus.IMPLEMENTED), now
