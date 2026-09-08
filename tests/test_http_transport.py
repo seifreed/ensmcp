@@ -151,6 +151,29 @@ def test_streamable_http_initializes_with_authentication() -> None:
 
     check(response.status_code == 200)
     check(response.json()["result"]["serverInfo"]["name"] == "ensmcp")
+
+    case_server, _ = build_wiring(None)
+    case_app = build_http_app(
+        case_server,
+        HTTPSettings(
+            token=TOKEN,
+            host="localhost",
+            allowed_origins=("HTTPS://CLIENT.EXAMPLE/",),
+        ),
+    )
+    with TestClient(case_app) as client:
+        response = client.post(
+            "/mcp",
+            headers={
+                "host": "LOCALHOST",
+                "origin": "https://client.example",
+                "authorization": f"Bearer {TOKEN}",
+                "accept": "application/json, text/event-stream",
+            },
+            json=request,
+        )
+    check(response.status_code == 200, response.text)
+
     ipv6_server, _ = build_wiring(None)
     build_http_app(ipv6_server, HTTPSettings(token=TOKEN, host="::1"))
 

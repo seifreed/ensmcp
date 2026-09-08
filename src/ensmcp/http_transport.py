@@ -128,10 +128,12 @@ def build_http_app(server: MCPServer, settings: HTTPSettings) -> Starlette:
         f"{host_header}:*",
         *settings.allowed_hosts,
     )
+    allowed_origins = tuple(origin.removesuffix("/") for origin in settings.allowed_origins)
+    # SecureBearerMiddleware owns Host and Origin validation. The SDK layer is
+    # exact and case-sensitive, so enabling both would reject requests already
+    # accepted by the RFC-aware outer check. It still validates Content-Type.
     security = TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
-        allowed_hosts=list(allowed_hosts),
-        allowed_origins=list(settings.allowed_origins),
+        enable_dns_rebinding_protection=False,
     )
     app = server.streamable_http_app(
         host=settings.host,
@@ -143,7 +145,7 @@ def build_http_app(server: MCPServer, settings: HTTPSettings) -> Starlette:
         SecureBearerMiddleware,
         token=settings.token,
         allowed_hosts=allowed_hosts,
-        allowed_origins=settings.allowed_origins,
+        allowed_origins=allowed_origins,
     )
     return app
 
