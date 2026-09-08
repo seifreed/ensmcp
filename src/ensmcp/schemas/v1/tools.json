@@ -1309,6 +1309,36 @@
         "type": "object"
       }
     },
+    "list_data_packs": {
+      "inputSchema": {
+        "properties": {
+          "include_inactive": {
+            "default": false,
+            "title": "Include Inactive",
+            "type": "boolean"
+          }
+        },
+        "title": "list_data_packsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Result",
+            "type": "array"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "list_data_packsOutput",
+        "type": "object"
+      }
+    },
     "list_dda": {
       "inputSchema": {
         "properties": {},
@@ -1433,6 +1463,79 @@
           "result"
         ],
         "title": "list_measuresOutput",
+        "type": "object"
+      }
+    },
+    "query_crosswalk": {
+      "inputSchema": {
+        "properties": {
+          "pack_id": {
+            "title": "Pack Id",
+            "type": "string"
+          },
+          "ens_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ens Code"
+          },
+          "external_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "External Reference"
+          },
+          "include_inactive": {
+            "default": false,
+            "title": "Include Inactive",
+            "type": "boolean"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Limit"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "required": [
+          "pack_id"
+        ],
+        "title": "query_crosswalkArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "query_crosswalkDictOutput",
         "type": "object"
       }
     },

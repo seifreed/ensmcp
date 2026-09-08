@@ -18,6 +18,7 @@ from typing import Any
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
+from ensmcp.domain.crosswalk import DataPack, DataPackStatus
 from ensmcp.domain.dda import (
     DDAMeasure,
     DDAMeasureUpdate,
@@ -281,6 +282,25 @@ def _article_to_dict(article: ArticleCheck) -> dict[str, Any]:
 
 def _evidence_to_dict(item: MeasureEvidence) -> dict[str, Any]:
     return {"measure_code": item.measure_code, "evidence": list(item.evidence)}
+
+
+def _data_pack_to_dict(pack: DataPack) -> dict[str, Any]:
+    return {
+        "schema_version": pack.schema_version,
+        "pack_id": pack.pack_id,
+        "title": pack.title,
+        "framework": pack.framework,
+        "framework_version": pack.framework_version,
+        "version": pack.version,
+        "status": pack.status.value,
+        "coverage": pack.coverage.value,
+        "authority": pack.authority,
+        "source_url": pack.source_url,
+        "source_date": pack.source_date,
+        "reviewed_at": pack.reviewed_at,
+        "notes": pack.notes,
+        "mapping_count": len(pack.mappings),
+    }
 
 
 def _maturity_to_dict(level: MaturityLevel) -> dict[str, str]:
@@ -710,6 +730,7 @@ def build_server(
     guia: Guia808 | None = None,
     dda_store: DDAStore | None = None,
     export_handler: ExportHandler | None = None,
+    data_packs: Sequence[DataPack] = (),
     clock: Clock = lambda: datetime.now(UTC),
 ) -> MCPServer:
     """Build the MCP server, wiring each tool to ``repository``.
@@ -1113,6 +1134,79 @@ def build_server(
             and (not essential_only or requirement.essential)
         ]
         return _paginate(requirements, limit, cursor)
+
+    @server.tool(annotations=_READ_ONLY, structured_output=True)
+    async def list_data_packs(include_inactive: bool = False) -> list[dict[str, Any]]:
+        """Lista los crosswalks externos, su procedencia, cobertura y vigencia."""
+        return [
+            _data_pack_to_dict(pack)
+            for pack in data_packs
+            if include_inactive or pack.status is DataPackStatus.ACTIVE
+        ]
+
+    @server.tool(annotations=_READ_ONLY, structured_output=True)
+    async def query_crosswalk(
+        pack_id: str,
+        ens_code: str | None = None,
+        external_reference: str | None = None,
+        include_inactive: bool = False,
+        limit: int | None = None,
+        cursor: str | None = None,
+    ) -> dict[str, Any]:
+        """Consulta un crosswalk por medida ENS o referencia del otro marco."""
+        wanted_pack = _normalize(pack_id)
+        pack = next((item for item in data_packs if item.pack_id == wanted_pack), None)
+        if pack is None:
+            raise ValueError(f"data pack desconocido: {pack_id!r}")
+        if pack.status is not DataPackStatus.ACTIVE and not include_inactive:
+            raise ValueError(
+                f"data pack {pack.pack_id!r} no está activo; "
+                "use include_inactive para inspeccionarlo"
+            )
+
+        _, measures = await repository.fetch_corpus()
+        known_codes = {measure.code for measure in measures}
+        unknown_codes = sorted(
+            {
+                code
+                for mapping in pack.mappings
+                for code in mapping.ens_measure_codes
+                if code not in known_codes
+            }
+        )
+        if unknown_codes:
+            raise ValueError(
+                f"data pack {pack.pack_id!r} contiene medidas ENS desconocidas: {unknown_codes}"
+            )
+        normalized_code = _normalize_filter_value(ens_code)
+        if normalized_code is not None:
+            normalized_code = _require_measure(measures, normalized_code).code
+        normalized_reference = external_reference.strip().casefold() if external_reference else None
+        mappings = [
+            mapping
+            for mapping in pack.mappings
+            if (normalized_code is None or normalized_code in mapping.ens_measure_codes)
+            and (
+                normalized_reference is None
+                or mapping.external_reference.casefold() == normalized_reference
+            )
+        ]
+        payload = _data_pack_to_dict(pack)
+        payload["mappings"] = _paginate(
+            [
+                {
+                    "external_reference": mapping.external_reference,
+                    "ens_measure_codes": list(mapping.ens_measure_codes),
+                    "relation": mapping.relation.value,
+                    "source_reference": mapping.source_reference,
+                    "notes": mapping.notes,
+                }
+                for mapping in mappings
+            ],
+            limit,
+            cursor,
+        )
+        return payload
 
     if dda_store is not None:
 

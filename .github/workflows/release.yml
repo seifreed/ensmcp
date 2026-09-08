@@ -51,6 +51,11 @@ jobs:
             }
       - run: pip install build
       - run: python -m build
+      - name: Stage independent data packs
+        run: |
+          cp packs/*.json dist/
+          cd dist
+          sha256sum dora.json iso27001.json nis2.json > data-packs.sha256
       - name: Generate CycloneDX SBOM
         run: python scripts/build_sbom.py pylock.toml "dist/ensmcp-${GITHUB_REF_NAME#v}-sbom.cdx.json"
       # Smoke-test the built wheel in a clean venv. CI installs the project in

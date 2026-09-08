@@ -109,6 +109,14 @@ def test_release_requires_a_github_verified_annotated_tag() -> None:
     check("GitHub could not verify the signature" in workflow)
 
 
+def test_release_attaches_data_packs_but_does_not_publish_them_to_pypi() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+
+    check("cp packs/*.json dist/" in workflow)
+    check("sha256sum dora.json iso27001.json nis2.json > data-packs.sha256" in workflow)
+    check("Keep only Python distributions for PyPI" in workflow)
+
+
 # El probe viaja como argv de `-c`, y en la locale C de Linux CPython aborta en
 # el arranque si no puede decodificar el propio argv ("Unable to decode the
 # command from the command line"): un solo carácter no-ASCII aquí y el test

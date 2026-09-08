@@ -44,6 +44,7 @@ Además del Anexo II, incorpora el cuestionario de verificación de la **guía C
 | **Comprobación explícita** | `--check-updates` detecta cambios sin sustituir los datos servidos |
 | **Matriz de aplicabilidad** | Calcula la base normativa para preparar la Declaración de Aplicabilidad |
 | **Auditoría CCN-STIC 808** | Temario de auditoría, requisitos esenciales, artículos del RD y evidencias documentales |
+| **Crosswalks externos** | Carga data packs versionados sin acoplar otros marcos al core |
 
 ## Tools disponibles
 
@@ -72,6 +73,13 @@ Además del Anexo II, incorpora el cuestionario de verificación de la **guía C
 | `requisitos_auditoria` | `code?`, `level?` | El cuestionario CCN-STIC 808 en bruto, por medida o por tramo, marcando los requisitos esenciales. |
 | `requisitos_articulos` | — | Las comprobaciones de auditoría sobre el articulado del RD (DdA formal, categorización, INES...). |
 | `evidencias_auditoria` | `code?` | La documentación que puede pedir el auditor, por medida. |
+
+### Crosswalks
+
+| Tool | Args | Descripción |
+|------|------|-------------|
+| `list_data_packs` | `include_inactive?` | Lista packs configurados con fuente, versión, cobertura y vigencia. |
+| `query_crosswalk` | `pack_id`, `ens_code?`, `external_reference?` | Consulta correspondencias en ambas direcciones, con paginación opcional. |
 
 ### Estado y actualización
 
@@ -162,6 +170,16 @@ ensmcp --live
 ```
 
 También puede configurarse con `ENSMCP_MODE=offline|check-updates|live`.
+
+### Data packs independientes
+
+Los crosswalks no forman parte del paquete Python ni se activan implícitamente. `ENSMCP_DATA_PACKS` acepta un fichero, un directorio con ficheros JSON o varias rutas separadas por el separador del sistema (`:` en Unix, `;` en Windows):
+
+```bash
+ENSMCP_DATA_PACKS=./packs ensmcp --offline
+```
+
+El repositorio incluye packs parciales para ISO/IEC 27001:2022 y DORA. Las relaciones DORA son editoriales y no equivalencias jurídicas. El pack NIS2 sólo registra el estado de la fuente: está inactivo y vacío porque el CCN retiró la CCN-STIC 892 anterior con efecto inmediato; puede inspeccionarse con `include_inactive=true` y no debe utilizarse como perfil vigente.
 
 ## Requisitos
 

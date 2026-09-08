@@ -299,6 +299,8 @@ async def test_module_entry_point_serves_the_expected_tools() -> None:
             "get_dda",
             "update_dda_measure_status",
             "export_dda",
+            "list_data_packs",
+            "query_crosswalk",
         }
     )
 

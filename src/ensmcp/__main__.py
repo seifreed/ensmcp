@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 
 from mcp.server.mcpserver import MCPServer
 
+from ensmcp.data_packs import load_configured_data_packs
 from ensmcp.dda_export import export_dda
 from ensmcp.dda_store import FileDDAStore
 from ensmcp.guia.loader import load_packaged_guide
@@ -77,6 +78,7 @@ def build_wiring(
     """
     snapshot = SnapshotRepository.from_package_data()
     dda_store = FileDDAStore.from_environment()
+    data_packs = load_configured_data_packs()
     if session is None:
         repo = RefreshingRepository(snapshot, snapshot, adopt_live=False)
         server = build_server(
@@ -85,6 +87,7 @@ def build_wiring(
             guia=load_packaged_guide(),
             dda_store=dda_store,
             export_handler=export_dda,
+            data_packs=data_packs,
         )
         return server, repo
 
@@ -108,6 +111,7 @@ def build_wiring(
         guia=load_packaged_guide(),
         dda_store=dda_store,
         export_handler=export_dda,
+        data_packs=data_packs,
     )
     return server, repo
 

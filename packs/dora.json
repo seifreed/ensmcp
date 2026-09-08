@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "pack_id": "dora",
+  "title": "ENS - DORA",
+  "framework": "Reglamento (UE) 2022/2554",
+  "framework_version": "DORA",
+  "version": "2026-09-08",
+  "status": "active",
+  "coverage": "partial",
+  "authority": "ensmcp",
+  "source_url": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+  "source_date": "2022-12-27",
+  "reviewed_at": "2026-09-08",
+  "notes": "Relaciones editoriales de apoyo, no equivalencias jurídicas. DORA incluye obligaciones adicionales de incidentes, pruebas de resiliencia y riesgo de terceros que no quedan satisfechas por estas medidas ENS.",
+  "mappings": [
+    {"external_reference": "Article 5", "ens_measure_codes": ["org.1", "org.4"], "relation": "editorial", "source_reference": "DORA Article 5"},
+    {"external_reference": "Article 6", "ens_measure_codes": ["op.pl.1", "op.pl.2"], "relation": "editorial", "source_reference": "DORA Article 6"},
+    {"external_reference": "Article 7", "ens_measure_codes": ["op.exp.2", "op.exp.4", "op.pl.4"], "relation": "editorial", "source_reference": "DORA Article 7"},
+    {"external_reference": "Article 8", "ens_measure_codes": ["op.exp.1", "op.pl.1", "op.pl.2"], "relation": "editorial", "source_reference": "DORA Article 8"},
+    {"external_reference": "Article 9", "ens_measure_codes": ["op.acc.2", "op.acc.5", "op.exp.5", "op.exp.10", "mp.com.2"], "relation": "editorial", "source_reference": "DORA Article 9"},
+    {"external_reference": "Article 10", "ens_measure_codes": ["op.mon.1", "op.mon.2", "op.mon.3"], "relation": "editorial", "source_reference": "DORA Article 10"},
+    {"external_reference": "Article 11", "ens_measure_codes": ["op.exp.7", "op.cont.2", "op.cont.4"], "relation": "editorial", "source_reference": "DORA Article 11"},
+    {"external_reference": "Article 12", "ens_measure_codes": ["mp.info.6", "op.cont.3"], "relation": "editorial", "source_reference": "DORA Article 12"},
+    {"external_reference": "Article 13", "ens_measure_codes": ["op.exp.7", "op.exp.9", "mp.per.3", "mp.per.4"], "relation": "editorial", "source_reference": "DORA Article 13"},
+    {"external_reference": "Article 14", "ens_measure_codes": ["org.2", "org.3", "op.ext.4"], "relation": "editorial", "source_reference": "DORA Article 14"},
+    {"external_reference": "Article 24", "ens_measure_codes": ["op.cont.3", "op.mon.2"], "relation": "editorial", "source_reference": "DORA Article 24"},
+    {"external_reference": "Article 28", "ens_measure_codes": ["op.ext.1", "op.ext.2", "op.ext.3", "op.nub.1"], "relation": "editorial", "source_reference": "DORA Article 28"}
+  ]
+}

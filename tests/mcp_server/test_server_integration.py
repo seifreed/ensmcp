@@ -6,6 +6,7 @@ import json
 import re
 from base64 import b64decode
 from collections.abc import AsyncIterator
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ResourceError, ToolError
 from mcp.types import CallToolResult
 
+from ensmcp.data_packs import load_data_pack
 from ensmcp.dda_export import export_dda
 from ensmcp.dda_store import FileDDAStore
 from ensmcp.guia.loader import load_packaged_guide
@@ -546,8 +548,66 @@ async def snapshot_server(tmp_path: Path) -> MCPServer:
         guia=load_packaged_guide(),
         dda_store=FileDDAStore(tmp_path / "dda"),
         export_handler=export_dda,
+        data_packs=tuple(load_data_pack(path) for path in sorted(Path("packs").glob("*.json"))),
         clock=lambda: datetime(2026, 9, 8, tzinfo=UTC),
     )
+
+
+async def test_crosswalk_tools_filter_and_preserve_lifecycle(snapshot_server: MCPServer) -> None:
+    active = await _call_list(snapshot_server, "list_data_packs", {})
+    check({pack["pack_id"] for pack in active} == {"iso27001", "dora"})
+    all_packs = await _call_list(snapshot_server, "list_data_packs", {"include_inactive": True})
+    check({pack["pack_id"] for pack in all_packs} == {"iso27001", "nis2", "dora"})
+    check(next(pack for pack in all_packs if pack["pack_id"] == "nis2")["status"] == "withdrawn")
+
+    iso = await _call_result(
+        snapshot_server,
+        "query_crosswalk",
+        {"pack_id": "ISO27001", "ens_code": "ORG.1"},
+    )
+    check((iso.structured_content or {})["mappings"][0]["external_reference"] == "5.1")
+
+    dora = await _call_result(
+        snapshot_server,
+        "query_crosswalk",
+        {
+            "pack_id": "dora",
+            "external_reference": "article 10",
+            "limit": 1,
+            "cursor": "0",
+        },
+    )
+    check(
+        (dora.structured_content or {})["mappings"]["items"][0]["external_reference"]
+        == "Article 10"
+    )
+
+    nis2 = await _call_result(
+        snapshot_server,
+        "query_crosswalk",
+        {"pack_id": "nis2", "include_inactive": True},
+    )
+    check((nis2.structured_content or {})["mappings"] == [])
+
+    with pytest.raises(ToolError, match="desconocido"):
+        await snapshot_server.call_tool("query_crosswalk", {"pack_id": "missing"})
+    with pytest.raises(ToolError, match="no está activo"):
+        await snapshot_server.call_tool("query_crosswalk", {"pack_id": "nis2"})
+    with pytest.raises(ToolError, match="ninguna medida"):
+        await snapshot_server.call_tool(
+            "query_crosswalk", {"pack_id": "iso27001", "ens_code": "missing"}
+        )
+
+
+async def test_crosswalk_rejects_unknown_measure_codes_in_a_pack() -> None:
+    pack = load_data_pack(Path("packs/dora.json"))
+    invalid = replace(
+        pack,
+        mappings=(replace(pack.mappings[0], ens_measure_codes=("unknown.1",)),),
+    )
+    server = build_server(SnapshotRepository.from_package_data(), data_packs=(invalid,))
+    with pytest.raises(ToolError, match="medidas ENS desconocidas"):
+        await server.call_tool("query_crosswalk", {"pack_id": "dora"})
 
 
 async def test_persistent_dda_workflow(snapshot_server: MCPServer) -> None:
@@ -1132,6 +1192,8 @@ async def test_build_server_without_refresh_exposes_no_refresh_tool() -> None:
             "explain_applicability",
             "alcance_auditoria",
             "requisitos_auditoria",
+            "list_data_packs",
+            "query_crosswalk",
         }
     )
     check("snapshot_status" not in names)

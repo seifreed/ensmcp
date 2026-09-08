@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "pack_id": "iso27001",
+  "title": "ENS - ISO/IEC 27001:2022",
+  "framework": "ISO/IEC 27001",
+  "framework_version": "2022",
+  "version": "2023-07",
+  "status": "active",
+  "coverage": "partial",
+  "authority": "Centro Criptológico Nacional",
+  "source_url": "https://www.ccn-cert.cni.es/es/pdf/guias/series-ccn-stic/800-guia-esquema-nacional-de-seguridad/7101-ccn-stic-825-anexo-independiente-mapeo-entre-la-norma-iso-27001-2022-y-el-rd-311-2022-ens/file.html",
+  "source_date": "2023-07",
+  "reviewed_at": "2026-09-08",
+  "notes": "Selección parcial de correspondencias directas publicadas en el anexo independiente CCN-STIC 825. No implica equivalencia de certificaciones ni sustituye la guía completa.",
+  "mappings": [
+    {"external_reference": "5.1", "ens_measure_codes": ["org.1", "org.2"], "relation": "official", "source_reference": "CCN-STIC 825, control 5.1"},
+    {"external_reference": "5.7", "ens_measure_codes": ["op.mon.3"], "relation": "official", "source_reference": "CCN-STIC 825, control 5.7"},
+    {"external_reference": "5.9", "ens_measure_codes": ["op.exp.1", "op.pl.2"], "relation": "official", "source_reference": "CCN-STIC 825, control 5.9"},
+    {"external_reference": "5.15", "ens_measure_codes": ["op.acc.2"], "relation": "official", "source_reference": "CCN-STIC 825, control 5.15"},
+    {"external_reference": "5.16", "ens_measure_codes": ["op.acc.1"], "relation": "official", "source_reference": "CCN-STIC 825, control 5.16"},
+    {"external_reference": "5.18", "ens_measure_codes": ["op.acc.4"], "relation": "official", "source_reference": "CCN-STIC 825, control 5.18"},
+    {"external_reference": "5.21", "ens_measure_codes": ["op.ext.3"], "relation": "official", "source_reference": "CCN-STIC 825, control 5.21"},
+    {"external_reference": "5.23", "ens_measure_codes": ["op.nub.1"], "relation": "official", "source_reference": "CCN-STIC 825, control 5.23"},
+    {"external_reference": "5.24", "ens_measure_codes": ["op.exp.7"], "relation": "official", "source_reference": "CCN-STIC 825, control 5.24"},
+    {"external_reference": "5.29", "ens_measure_codes": ["op.cont.1", "op.cont.2"], "relation": "official", "source_reference": "CCN-STIC 825, control 5.29"},
+    {"external_reference": "5.30", "ens_measure_codes": ["op.cont.3"], "relation": "official", "source_reference": "CCN-STIC 825, control 5.30"},
+    {"external_reference": "8.13", "ens_measure_codes": ["mp.info.6"], "relation": "official", "source_reference": "CCN-STIC 825, control 8.13"},
+    {"external_reference": "8.32", "ens_measure_codes": ["op.exp.5"], "relation": "official", "source_reference": "CCN-STIC 825, control 8.32"}
+  ]
+}

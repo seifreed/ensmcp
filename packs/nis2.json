@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "pack_id": "nis2",
+  "title": "ENS - Directiva NIS2",
+  "framework": "Directiva (UE) 2022/2555",
+  "framework_version": "NIS2",
+  "version": "2024-04-withdrawn",
+  "status": "withdrawn",
+  "coverage": "unavailable",
+  "authority": "Centro Criptológico Nacional",
+  "source_url": "https://www.ccn-cert.cni.es/es/seguridad-al-dia/novedades-ccn-cert/13062-informacion-sobre-el-estado-de-la-guia-ccn-stic-892-perfil-de-cumplimiento-especifico-para-entidades-en-el-ambito-de-aplicacion-del-reglamento-de-ejecucion-ue-2024-2690.html",
+  "source_date": "2025-03-28",
+  "reviewed_at": "2026-09-08",
+  "notes": "El CCN retiró la CCN-STIC 892 anterior y declaró que dejó de tener aplicabilidad con efecto inmediato. Este pack no publica sus correspondencias y permanecerá inactivo hasta una fuente oficial sustituta.",
+  "mappings": []
+}
