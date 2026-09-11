@@ -152,14 +152,15 @@ async def test_repository_raises_when_no_iframe_matches_the_content_fragment() -
     #
     # This used to load w3schools.com, which was heavy and ad-laden enough that
     # a tight timeout flaked under a full-suite run, forcing a 60s timeout. A
-    # local fixture is instant and cannot flake.
+    # local fixture avoids that dependency; the timeout still leaves enough
+    # room for a cold Chromium on a loaded Windows runner.
     with local_site(
         {
             OUTER_PAGE_FILENAME: '<iframe src="something-else.html"></iframe>',
             "something-else.html": "<p>not the ENS content frame</p>",
         }
     ) as base_url:
-        async with local_session(base_url, timeout_ms=2000) as session:
+        async with local_session(base_url, timeout_ms=5000) as session:
             repository = NavegableRepository(session)
             # Con guarda del arnés, por lo mismo que la tiene el test del fetch
             # que se queda colgado: la fecha límite de ``_resolve_content_frame``
