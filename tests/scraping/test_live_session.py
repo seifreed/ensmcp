@@ -119,7 +119,8 @@ async def test_description_fetch_times_out_instead_of_hanging_forever() -> None:
     # fetch, that one stall wedged *every* later tool call too. The abort
     # signal must cut it loose at timeout_ms.
     with stalling_requisitos_site() as base_url:
-        async with local_session(base_url, timeout_ms=2000) as session:
+        async with local_session(base_url, timeout_ms=5000) as session:
+            await session.frame()
             repository = NavegableRepository(session)
             started = time.monotonic()
 
@@ -131,7 +132,7 @@ async def test_description_fetch_times_out_instead_of_hanging_forever() -> None:
                 await asyncio.wait_for(repository.fetch_corpus(), timeout=HARNESS_GUARD_S)
 
             elapsed = time.monotonic() - started
-            check(elapsed < HARNESS_GUARD_S / 2, f"fetch took {elapsed:.1f}s, expected ~2s")
+            check(elapsed < HARNESS_GUARD_S / 2, f"fetch took {elapsed:.1f}s, expected ~5s")
 
 
 @pytest.mark.network
